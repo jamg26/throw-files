@@ -1,7 +1,7 @@
-const jwt = require('jwt-simple');
-const mongoose = require('mongoose');
-const User = mongoose.model('user');
-const config = require('../config');
+const jwt = require("jwt-simple");
+const mongoose = require("mongoose");
+const User = mongoose.model("user");
+const config = require("../config");
 
 const tokenForUser = (user) => {
   const timestamp = new Date().getTime();
@@ -12,7 +12,7 @@ exports.signup = async (req, res, next) => {
   const { email, password } = req.body;
   try {
     const existing = await User.findOne({ email });
-    if (existing) return res.status(422).send({ error: 'Email is in use.' });
+    if (existing) return res.status(422).send({ error: "Email is in use." });
     const user = await new User({ email, password }).save();
     res.send({ token: tokenForUser(user) });
   } catch (error) {
@@ -21,6 +21,7 @@ exports.signup = async (req, res, next) => {
 };
 
 exports.signin = async (req, res, next) => {
+  console.log(req.user);
   // user has already had their email and password authenticated
   // we just need to give them a token
   res.send({ token: tokenForUser(req.user) });

@@ -1,36 +1,48 @@
-import React from 'react';
-import { reduxForm, Field } from 'redux-form';
-import { connect } from 'react-redux';
-import * as actions from '../actions';
-import { compose } from 'redux';
+import React from "react";
+import { connect } from "react-redux";
+import * as actions from "../actions";
 
 const Signup = (props) => {
-  const { handleSubmit } = props;
+  const [info, setInfo] = React.useState({});
 
-  const onSubmit = (formProps) => {
-    props.signup(formProps, () => {
-      props.history.push('/feature');
+  const onSubmit = () => {
+    props.signup(info, () => {
+      props.history.push("/");
+    });
+  };
+
+  const handleChange = (e) => {
+    setInfo({
+      ...info,
+      [e.target.name]: e.target.value,
     });
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
+    <>
       <fieldset>
         <label>Email</label>
-        <Field name='email' type='text' component='input' autoComplete='none' />
+        <input
+          name="email"
+          type="text"
+          component="input"
+          autoComplete="none"
+          onChange={handleChange}
+        />
       </fieldset>
       <fieldset>
         <label>Password</label>
-        <Field
-          name='password'
-          type='password'
-          component='input'
-          autoComplete='none'
+        <input
+          name="password"
+          type="password"
+          component="input"
+          autoComplete="none"
+          onChange={handleChange}
         />
       </fieldset>
       <p>{props.errorMessage}</p>
-      <button>Submit</button>
-    </form>
+      <button onClick={onSubmit}>Submit</button>
+    </>
   );
 };
 
@@ -40,7 +52,4 @@ const mapStateToProps = (state) => {
   };
 };
 
-export default compose(
-  reduxForm({ form: 'signup' }),
-  connect(mapStateToProps, actions)
-)(Signup);
+export default connect(mapStateToProps, actions)(Signup);
