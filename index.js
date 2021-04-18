@@ -10,7 +10,7 @@ const router = require("./router");
 
 mongoose.connect(
   "mongodb+srv://jamg:jamuel26@jamg-cluster-ccgrf.gcp.mongodb.net/auth?retryWrites=true&w=majority",
-  { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true }
+  { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true, useFindAndModify: false }
 );
 
 // App Setup
