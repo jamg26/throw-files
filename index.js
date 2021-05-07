@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const http = require("http");
 //const bodyParser = require("body-parser");
@@ -8,16 +9,27 @@ const mongoose = require("mongoose");
 require("./models/user");
 const router = require("./router");
 
-mongoose.connect(
-  "mongodb+srv://jamg:jamuel26@jamg-cluster-ccgrf.gcp.mongodb.net/auth?retryWrites=true&w=majority",
-  { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true, useFindAndModify: false }
-);
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  useCreateIndex: true,
+  useFindAndModify: false,
+});
 
 // App Setup
 app.use(morgan("tiny"));
 //app.use(bodyParser.json({ type: "*/*" })); //deprecated
 app.use(express.json());
 router(app);
+
+if (["production"].includes(process.env.NODE_ENV)) {
+  app.use(express.static("client/build"));
+
+  const path = require("path");
+  app.get("*", (req, res) => {
+    res.sendFile(path.resolve("client", "build", "index.html"));
+  });
+}
 
 // Server Setup
 const port = process.env.PORT || 5000;
