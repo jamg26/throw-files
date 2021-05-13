@@ -8,15 +8,14 @@ import { createStore, applyMiddleware } from "redux";
 import { composeWithDevTools } from "redux-devtools-extension/developmentOnly";
 import reducers from "./reducers";
 import reduxThunk from "redux-thunk";
+import axios from "axios";
 
-// Add a request interceptor if req.user not found in server
-// import axios from "axios";
-// axios.interceptors.request.use(function (config) {
-//   const token = `${localStorage.getItem("token")}`;
-//   config.headers.Authorization = token;
+axios.interceptors.request.use(function (config) {
+  const token = `${localStorage.getItem("token")}`;
+  config.headers.Authorization = token;
 
-//   return config;
-// });
+  return config;
+});
 
 const store = createStore(
   reducers,
