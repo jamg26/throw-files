@@ -1,9 +1,9 @@
-import React from "react";
 import { connect } from "react-redux";
 import * as actions from "../actions/auth";
+import { useState } from "react";
 
 const Signup = (props) => {
-  const [info, setInfo] = React.useState({});
+  const [info, setInfo] = useState({});
 
   const onSubmit = () => {
     props.signup(info, () => {
