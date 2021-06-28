@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export const signup = (formProps, callback) => async (dispatch) => {
+export const signupAction = (formProps, callback) => async (dispatch) => {
   try {
     const response = await axios.post('/api/signup', formProps);
     dispatch({ type: 'AUTH_USER', payload: response.data.token });
@@ -11,7 +11,7 @@ export const signup = (formProps, callback) => async (dispatch) => {
   }
 };
 
-export const signin = (formProps, callback) => async (dispatch) => {
+export const signinAction = (formProps, callback) => async (dispatch) => {
   try {
     const response = await axios.post('/api/signin', formProps);
     dispatch({ type: 'AUTH_USER', payload: response.data.token });
@@ -22,7 +22,7 @@ export const signin = (formProps, callback) => async (dispatch) => {
   }
 };
 
-export const signout = () => {
+export const signoutAction = () => {
   localStorage.removeItem('token');
   return {
     type: 'AUTH_USER',
