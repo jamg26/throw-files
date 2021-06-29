@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import './HeaderStyle.css';
+import styled from 'styled-components';
 
 export const Header = (props) => {
   const authenticated = useSelector((state) => state.auth.authenticated);
@@ -23,9 +23,17 @@ export const Header = (props) => {
   };
 
   return (
-    <div className='header'>
+    <HeaderContainer>
       <Link to='/'>TITLE</Link>
       {renderLinks()}
-    </div>
+    </HeaderContainer>
   );
 };
+
+const HeaderContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  a {
+    margin: 0 10px;
+  }
+`;

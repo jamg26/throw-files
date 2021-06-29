@@ -1,8 +1,8 @@
-import { Button } from 'antd';
+import { Button as AntButton } from 'antd';
 import styled from 'styled-components';
 
-export const ButtonComponent = (props) => {
-  return <Styled {...props}>{props.children}</Styled>;
+export const Button = (props) => {
+  return <ButtonContainer {...props}>{props.children}</ButtonContainer>;
 };
 
-const Styled = styled(Button)``;
+const ButtonContainer = styled(AntButton)``;

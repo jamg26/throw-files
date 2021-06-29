@@ -1,6 +1,7 @@
 import { useDispatch } from 'react-redux';
 import { signupAction } from '../../actions';
 import { useState } from 'react';
+import { Button } from '../../components';
 
 export const Signup = (props) => {
   const [info, setInfo] = useState({});
@@ -30,7 +31,7 @@ export const Signup = (props) => {
         <label>Password</label>
         <input name='password' type='password' component='input' autoComplete='none' onChange={handleChange} />
       </fieldset>
-      <button onClick={onSubmit}>Submit</button>
+      <Button onClick={onSubmit}>Submit</Button>
     </>
   );
 };
