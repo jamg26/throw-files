@@ -51,9 +51,8 @@ console.log('Server is Listening on: ', port);
 
 let users;
 io.on('connection', (socket) => {
-    console.log('user connected');
     socket.on('throw-file', (data) => {
-        console.log('sending to channel#:', data.channel);
+        console.log('file received, sending to channel#:', data.channel);
         socket.broadcast.emit(data.channel, { ...data, type: data.type });
     });
 

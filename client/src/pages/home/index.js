@@ -74,7 +74,7 @@ export const Home = (props) => {
     };
 
     return (
-        <Row justify='center'>
+        <Row justify='center' style={{ margin: '20px' }}>
             <Col>
                 <Card isActive style={{ marginTop: '100px' }}>
                     <CardHeader>
