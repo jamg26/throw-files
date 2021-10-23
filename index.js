@@ -49,7 +49,6 @@ const io = new Server(server, {
 server.listen(port);
 console.log('Server is Listening on: ', port);
 
-let users;
 io.on('connection', (socket) => {
     socket.on('throw-file', (data) => {
         console.log('file received, sending to channel#:', data.channel);

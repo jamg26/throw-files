@@ -29,7 +29,6 @@ export const Home = (props) => {
     }, []);
 
     useEffect(() => {
-        socket.removeAllListeners();
         socket.on(channel, (data) => {
             message.success('a user sent a file.');
             var blob = new Blob([data.file], { type: data.type });
@@ -69,8 +68,8 @@ export const Home = (props) => {
     };
 
     const handleConnectChannel = () => {
-        setChannel(connectChannel);
         socket.emit('channel-join', channel);
+        setChannel(connectChannel);
     };
 
     return (
