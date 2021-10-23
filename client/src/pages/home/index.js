@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Row, Col, Space, Typography } from 'antd';
+import { Row, Col, Space, message, Tooltip } from 'antd';
 import io from 'socket.io-client';
 import randomstring from 'randomstring';
 import { Button, Input, Card, CardBody, CardHeader } from '../../components';
@@ -31,13 +31,17 @@ export const Home = (props) => {
     useEffect(() => {
         socket.removeAllListeners();
         socket.on(channel, (data) => {
-            console.log(data, data.type, data.name);
+            message.success('a user sent a file.');
             var blob = new Blob([data.file], { type: data.type });
             var objectUrl = URL.createObjectURL(blob);
             var a = document.createElement('a');
             a.href = objectUrl;
             a.download = data.name;
             a.click();
+        });
+
+        socket.on(`join-${channel}`, (data) => {
+            message.info(data);
         });
     }, [channel]);
 
@@ -55,6 +59,7 @@ export const Home = (props) => {
     };
 
     function getBase64(file) {
+        message.success('Throwing file....');
         socket.emit('throw-file', { file: file, name: file.name, type: file.type, channel });
         fileRef.current.value = null;
     }
@@ -65,6 +70,7 @@ export const Home = (props) => {
 
     const handleConnectChannel = () => {
         setChannel(connectChannel);
+        socket.emit('channel-join', channel);
     };
 
     return (
@@ -89,7 +95,12 @@ export const Home = (props) => {
                             </Space>
                             <input type='file' onChange={throwFile} ref={fileRef} hidden />
                             <hr />
-                            <Button onClick={() => fileRef.current.click()}>THROW!</Button>
+                            <Space>
+                                <Button onClick={() => fileRef.current.click()}>THROW A FILE!</Button>{' '}
+                                <Tooltip title='We are not saving your files into our end, we actually doing magic to teleport to your destination devices.'>
+                                    <a>?</a>
+                                </Tooltip>
+                            </Space>
                         </Space>
                     </CardBody>
                 </Card>

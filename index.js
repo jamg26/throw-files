@@ -56,4 +56,9 @@ io.on('connection', (socket) => {
         console.log('sending to channel#:', data.channel);
         socket.broadcast.emit(data.channel, { ...data, type: data.type });
     });
+
+    socket.on('channel-join', (channel) => {
+        console.log('user joined to', channel);
+        socket.broadcast.emit(`join-${channel}`, 'A user joined the channel.');
+    });
 });
