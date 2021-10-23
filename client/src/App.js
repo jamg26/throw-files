@@ -6,7 +6,7 @@ import './App.less';
 function App() {
   return (
     <BrowserRouter>
-      <Header />
+      {/* <Header /> */}
       <Route exact path='/' component={Home} />
       <Route exact path='/signin' component={Signin} />
       <Route exact path='/signup' component={Signup} />

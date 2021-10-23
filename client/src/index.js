@@ -1,36 +1,40 @@
-import ReactDOM from "react-dom";
+import ReactDOM from 'react-dom';
 
-import App from "./App";
-import * as serviceWorker from "./serviceWorker";
-import { Provider } from "react-redux";
-import { createStore, applyMiddleware } from "redux";
-import { composeWithDevTools } from "redux-devtools-extension/developmentOnly";
-import reducers from "./reducers";
-import reduxThunk from "redux-thunk";
-import axios from "axios";
+import App from './App';
+import * as serviceWorker from './serviceWorker';
+import { Provider } from 'react-redux';
+import { createStore, applyMiddleware } from 'redux';
+import { composeWithDevTools } from 'redux-devtools-extension/developmentOnly';
+import reducers from './reducers';
+import reduxThunk from 'redux-thunk';
+import axios from 'axios';
+import { ThemeProvider } from 'styled-components';
+import { light, dark } from '@pancakeswap-libs/uikit';
 
 axios.interceptors.request.use(function (config) {
-  const token = `${localStorage.getItem("token")}`;
-  config.headers.Authorization = token;
+    const token = `${localStorage.getItem('token')}`;
+    config.headers.Authorization = token;
 
-  return config;
+    return config;
 });
 
 const store = createStore(
-  reducers,
-  {
-    auth: {
-      authenticated: localStorage.getItem("token"),
+    reducers,
+    {
+        auth: {
+            authenticated: localStorage.getItem('token'),
+        },
     },
-  },
-  composeWithDevTools(applyMiddleware(reduxThunk))
+    composeWithDevTools(applyMiddleware(reduxThunk))
 );
 
 ReactDOM.render(
-  <Provider store={store}>
-    <App />
-  </Provider>,
-  document.getElementById("root")
+    <Provider store={store}>
+        <ThemeProvider theme={light}>
+            <App />
+        </ThemeProvider>
+    </Provider>,
+    document.getElementById('root')
 );
 
 // If you want your app to work offline and load faster, you can change

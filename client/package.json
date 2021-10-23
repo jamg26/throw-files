@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@craco/craco": "^6.3.0",
+    "@pancakeswap-libs/uikit": "^0.29.4",
     "@testing-library/jest-dom": "^5.14.1",
     "@testing-library/react": "^12.1.2",
     "@testing-library/user-event": "^7.2.1",
@@ -11,6 +12,7 @@
     "axios": "^0.22.0",
     "craco-less": "^1.17.1",
     "http-proxy-middleware": "^0.21.0",
+    "randomstring": "^1.2.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-redux": "^7.2.5",
@@ -19,6 +21,8 @@
     "redux": "^4.1.1",
     "redux-devtools-extension": "^2.13.9",
     "redux-thunk": "^2.3.0",
+    "socket.io-client": "^4.3.2",
+    "socket.io-stream": "^0.9.1",
     "styled-components": "^5.3.1"
   },
   "scripts": {
