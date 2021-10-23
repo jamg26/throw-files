@@ -9,7 +9,7 @@ import reducers from './reducers';
 import reduxThunk from 'redux-thunk';
 import axios from 'axios';
 import { ThemeProvider } from 'styled-components';
-import { light, dark } from '@pancakeswap-libs/uikit';
+import { light } from '@pancakeswap-libs/uikit';
 
 axios.interceptors.request.use(function (config) {
     const token = `${localStorage.getItem('token')}`;

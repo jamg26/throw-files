@@ -15,4 +15,4 @@ export const CardHeader = (props) => {
 
 const Container = styled(Component)``;
 const Container2 = styled(Component2)``;
-const Container3 = styled(Component2)``;
+const Container3 = styled(Component3)``;

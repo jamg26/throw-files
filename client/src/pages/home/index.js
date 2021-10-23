@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Row, Col, Space, message, Tooltip } from 'antd';
+import { Row, Col, Space, message, Tooltip, Typography } from 'antd';
 import io from 'socket.io-client';
 import randomstring from 'randomstring';
 import { Button, Input, Card, CardBody, CardHeader } from '../../components';
 import { Text, Heading } from '@pancakeswap-libs/uikit';
-// const { Text } = Typography;
+const { Link } = Typography;
 
 const socket = io(process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000', {
     transports: ['websocket'],
@@ -77,30 +77,33 @@ export const Home = (props) => {
         <Row justify='center'>
             <Col>
                 <Card isActive style={{ marginTop: '100px' }}>
-                    <CardHeader
-                        style={{
-                            background: 'linear-gradient(111.68deg, rgb(242, 236, 242) 0%, rgb(232, 242, 246) 100%)',
-                        }}
-                    >
-                        <Heading>Throw files across devices!</Heading>
+                    <CardHeader>
+                        <Heading>Transfer files realtime across devices!</Heading>
                     </CardHeader>
                     <CardBody>
                         <Space direction='vertical'>
                             <Space>
-                                Channel: <Text>{channel}</Text> <a onClick={generateChannel}>refresh</a>
+                                Transfer Channel: <Text>{channel}</Text> <Link onClick={generateChannel}>refresh</Link>
                             </Space>
                             <Space>
                                 <Input onChange={handleChange} placeholder='Connect Channel' />
-                                <Button onClick={handleConnectChannel}>OK</Button>
+                                <Button onClick={handleConnectChannel}>CONNECT</Button>
                             </Space>
                             <input type='file' onChange={throwFile} ref={fileRef} hidden />
                             <hr />
+                            <div>Limit 50MB per throw</div>
                             <Space>
                                 <Button onClick={() => fileRef.current.click()}>THROW A FILE!</Button>{' '}
                                 <Tooltip title='We are not saving your files into our end, we actually doing magic to teleport to your destination devices.'>
-                                    <a>?</a>
+                                    <Link>?</Link>
                                 </Tooltip>
                             </Space>
+                            <small style={{ float: 'right', fontSize: '0.5rem' }}>
+                                created by{' '}
+                                <a href='https://fb.me/jammmg' target='_blank' rel='noreferrer'>
+                                    jamg
+                                </a>
+                            </small>
                         </Space>
                     </CardBody>
                 </Card>
