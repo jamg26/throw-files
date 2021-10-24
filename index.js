@@ -34,7 +34,7 @@ if (['production'].includes(process.env.NODE_ENV)) {
         res.sendFile(path.resolve('client', 'build', 'index.html'));
     });
 
-    app.get('/worker.js', (req, res) => {
+    app.get('/service-worker.js', (req, res) => {
         res.sendFile(path.resolve('client', 'build', 'worker.js'));
     });
 }
