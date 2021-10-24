@@ -45,7 +45,7 @@ const io = new Server(server, {
         origin: true,
         credentials: true,
     },
-    maxHttpBufferSize: 73400320,
+    maxHttpBufferSize: 104857600,
     allowRequest: (req, callback) => {
         const backend = process.env.BACKEND_JAMG || 'http://localhost:3000';
         if (req.headers.origin !== backend) {

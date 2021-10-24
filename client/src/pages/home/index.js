@@ -53,7 +53,7 @@ export const Home = memo((props) => {
         socket.on(`receiving-${channel}`, (data) => {
             window.navigator.vibrate(200);
             // message.info('Receiving file...');
-            addToast('Great!', 'You received a file.', 'info');
+            addToast('Great!', 'Receiving file...', 'info');
         });
 
         socket.on(`join-${channel}`, (room) => {
@@ -74,7 +74,7 @@ export const Home = memo((props) => {
     };
 
     const throwFile = (file) => {
-        if (file.target.files[0].size > 73400320) return addToast('Oops!', 'File size must below 70MB.', 'danger');
+        if (file.target.files[0].size > 104857600) return addToast('Oops!', 'File size must below 100MB.', 'danger');
         getBase64(file.target.files[0]);
     };
 
@@ -146,7 +146,7 @@ export const Home = memo((props) => {
                             </Space>
                             <input type='file' onChange={throwFile} ref={fileRef} hidden />
                             <hr />
-                            <div>Limit 70MB per throw</div>
+                            <div>Limit 100MB per throw</div>
                             <Space>
                                 <Popconfirm
                                     title='Your file will be shared across channel.'
