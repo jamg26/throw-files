@@ -146,7 +146,7 @@ export const Home = memo((props) => {
                             </Space>
                             <input type='file' onChange={throwFile} ref={fileRef} hidden />
                             <hr />
-                            <div>Limit 100MB per throw</div>
+                            <div>Limit 70MB per throw</div>
                             <Space>
                                 <Popconfirm
                                     title='Your file will be shared across channel.'
