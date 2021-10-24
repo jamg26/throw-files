@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Row, Col, Space, message, Tooltip, Typography } from 'antd';
+import { Row, Col, Space, message, Tooltip, Typography, Popconfirm } from 'antd';
 import io from 'socket.io-client';
 import randomstring from 'randomstring';
 import { Button, Input, Card, CardBody, CardHeader } from '../../components';
@@ -19,9 +19,8 @@ const socket = io(process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000', 
 });
 
 export const Home = (props) => {
-    // const [file, setFile] = useState(null);
-    const [connectChannel, setConnectChannel] = useState(null);
-    const [channel, setChannel] = useState();
+    const [channel, setChannel] = useState('');
+    // const [channelSize, setChannelSize] = useState(1);
     const fileRef = useRef(null);
 
     useEffect(() => {
@@ -30,17 +29,24 @@ export const Home = (props) => {
 
     useEffect(() => {
         socket.on(channel, (data) => {
-            message.success('a user sent a file.');
+            message.success('You received a file.');
             var blob = new Blob([data.file], { type: data.type });
             var objectUrl = URL.createObjectURL(blob);
             var a = document.createElement('a');
             a.href = objectUrl;
             a.download = data.name;
             a.click();
+            window.navigator.vibrate(200);
         });
 
-        socket.on(`join-${channel}`, (data) => {
-            message.info(data);
+        socket.on(`receiving-${channel}`, (data) => {
+            window.navigator.vibrate(200);
+            message.info('Receiving file...');
+        });
+
+        socket.on(`join-${channel}`, (room) => {
+            window.navigator.vibrate(200);
+            message.info('A user joined the channel.');
         });
     }, [channel]);
 
@@ -64,12 +70,12 @@ export const Home = (props) => {
     }
 
     const handleChange = (event) => {
-        setConnectChannel(event.target.value);
+        setChannel(event.target.value);
     };
 
     const handleConnectChannel = () => {
+        if (!channel) return message.error('Empty channel');
         socket.emit('channel-join', channel);
-        setChannel(connectChannel);
     };
 
     return (
@@ -84,15 +90,26 @@ export const Home = (props) => {
                             <Space>
                                 Transfer Channel: <Text>{channel}</Text> <Link onClick={generateChannel}>refresh</Link>
                             </Space>
+                            {/* <Space>
+                                Connected Users: <Text>{channelSize}</Text>
+                            </Space> */}
                             <Space>
-                                <Input onChange={handleChange} placeholder='Connect Channel' />
+                                <Input onChange={handleChange} placeholder='Connect Channel' value={channel} />
                                 <Button onClick={handleConnectChannel}>CONNECT</Button>
                             </Space>
                             <input type='file' onChange={throwFile} ref={fileRef} hidden />
                             <hr />
                             <div>Limit 50MB per throw</div>
                             <Space>
-                                <Button onClick={() => fileRef.current.click()}>THROW A FILE!</Button>{' '}
+                                <Popconfirm
+                                    title='Your file will be shared across channel.'
+                                    onConfirm={() => fileRef.current.click()}
+                                    // onCancel={cancel}
+                                    okText='Agree'
+                                    cancelText='Discard'
+                                >
+                                    <Button>THROW A FILE!</Button>
+                                </Popconfirm>
                                 <Tooltip title='We are not saving your files into our end, we actually doing magic to teleport to your destination devices.'>
                                     <Link>?</Link>
                                 </Tooltip>

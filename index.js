@@ -52,11 +52,14 @@ console.log('Server is Listening on: ', port);
 io.on('connection', (socket) => {
     socket.on('throw-file', (data) => {
         console.log('file received, sending to channel#:', data.channel);
+        socket.broadcast.emit(`receiving-${data.channel}`, { ...data, type: data.type });
         socket.broadcast.emit(data.channel, { ...data, type: data.type });
     });
 
     socket.on('channel-join', (channel) => {
-        console.log('user joined to', channel);
-        socket.broadcast.emit(`join-${channel}`, 'A user joined the channel.');
+        // console.log('User joined', channel);
+        // socket.join(channel);
+        // console.log(io.sockets.adapter.rooms.get(channel));
+        socket.broadcast.emit(`join-${channel}`, 'true');
     });
 });
