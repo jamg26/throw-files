@@ -7,6 +7,7 @@ const app = express();
 const mongoose = require('mongoose');
 
 require('./models/user');
+require('./models/throw');
 const router = require('./router');
 
 mongoose.connect(process.env.MONGO_URI, {
@@ -49,17 +50,22 @@ const io = new Server(server, {
 server.listen(port);
 console.log('Server is Listening on: ', port);
 
-io.on('connection', (socket) => {
-    socket.on('throw-file', (data) => {
+const Throws = mongoose.model('throws');
+
+io.on('connection', async (socket) => {
+    const totalThrows = await Throws.find();
+    io.sockets.emit('total', totalThrows.length);
+
+    socket.on('throw-file', async (data) => {
         console.log('file received, sending to channel#:', data.channel);
         socket.broadcast.emit(`receiving-${data.channel}`, { ...data, type: data.type });
         socket.broadcast.emit(data.channel, { ...data, type: data.type });
+        new Throws({ handshake: socket.handshake }).save();
+        const totalThrows = await Throws.find();
+        io.sockets.emit('total', totalThrows.length);
     });
 
     socket.on('channel-join', (channel) => {
-        // console.log('User joined', channel);
-        // socket.join(channel);
-        // console.log(io.sockets.adapter.rooms.get(channel));
         socket.broadcast.emit(`join-${channel}`, 'true');
     });
 });

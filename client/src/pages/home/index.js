@@ -20,12 +20,17 @@ const socket = io(process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000', 
 
 export const Home = (props) => {
     const [channel, setChannel] = useState('');
+    const [total, setTotal] = useState(0);
     // const [channelSize, setChannelSize] = useState(1);
     const fileRef = useRef(null);
 
     useEffect(() => {
         generateChannel();
     }, []);
+
+    useEffect(() => {
+        socket.on('total', setTotal);
+    }, [total]);
 
     useEffect(() => {
         socket.on(channel, (data) => {
@@ -110,8 +115,8 @@ export const Home = (props) => {
                                 >
                                     <Button>THROW A FILE!</Button>
                                 </Popconfirm>
-                                <Tooltip title='We are not saving your files into our end, we actually doing magic to teleport to your destination devices.'>
-                                    <Link>?</Link>
+                                <Tooltip title='We are not saving your files into our end, your file is running through socket to the destination devices.'>
+                                    <Link>Where my file go?</Link>
                                 </Tooltip>
                             </Space>
                             <small style={{ float: 'right', fontSize: '0.5rem' }}>
@@ -119,6 +124,7 @@ export const Home = (props) => {
                                 <a href='https://fb.me/jammmg' target='_blank' rel='noreferrer'>
                                     jamg
                                 </a>
+                                <div>Total throws: {total}</div>
                             </small>
                         </Space>
                     </CardBody>
