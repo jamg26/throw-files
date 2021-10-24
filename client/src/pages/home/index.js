@@ -65,6 +65,7 @@ export const Home = (props) => {
                 charset: 'numeric',
             })
         );
+        socket.removeAllListeners();
     };
 
     const throwFile = (file) => {
