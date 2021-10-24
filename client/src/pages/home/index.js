@@ -12,9 +12,9 @@ const socket = io(process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000', 
     extraHeaders: {
         'Bypass-Tunnel-Reminder': 'true',
     },
-    pingInterval: 60000,
-    pingTimeout: 60000,
-    upgradeTimeout: 30000,
+    // pingInterval: 60000,
+    // pingTimeout: 60000,
+    // upgradeTimeout: 30000,
 });
 
 export const Home = memo((props) => {
