@@ -53,7 +53,7 @@ export const Home = memo((props) => {
         socket.on(`receiving-${channel}`, (data) => {
             window.navigator.vibrate(200);
             // message.info('Receiving file...');
-            addToast('Great!', 'Receiving file...', 'info');
+            addToast('Please Wait', 'Receiving file...', 'info');
         });
 
         socket.on(`join-${channel}`, (room) => {
@@ -74,7 +74,7 @@ export const Home = memo((props) => {
     };
 
     const throwFile = (file) => {
-        if (file.target.files[0].size > 104857600) return addToast('Oops!', 'File size must below 100MB.', 'danger');
+        if (file.target.files[0].size > 73400320) return addToast('Oops!', 'File size must below 70MB.', 'danger');
         getBase64(file.target.files[0]);
     };
 
