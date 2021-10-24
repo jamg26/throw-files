@@ -88,7 +88,10 @@ export const Home = (props) => {
             <Col>
                 <Card isActive style={{ marginTop: '100px' }}>
                     <CardHeader>
-                        <Heading>Transfer files realtime across devices!</Heading>
+                        <Heading>
+                            Transfer files realtime across devices! <br />
+                            Wherever you are.
+                        </Heading>
                     </CardHeader>
                     <CardBody>
                         <Space direction='vertical'>
