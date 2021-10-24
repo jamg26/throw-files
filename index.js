@@ -45,7 +45,7 @@ const io = new Server(server, {
         origin: true,
         credentials: true,
     },
-    maxHttpBufferSize: 55428800,
+    maxHttpBufferSize: 73400320,
 });
 
 server.listen(port);
@@ -59,6 +59,7 @@ io.on('connection', async (socket) => {
 
     socket.on('throw-file', async (data) => {
         console.log('file received, sending to channel#:', data.channel);
+        io.to(socket.id).emit('threw', 'File has been threw.');
         socket.broadcast.emit(`receiving-${data.channel}`, { ...data, type: data.type });
         socket.broadcast.emit(data.channel, { ...data, type: data.type });
         new Throws({ handshake: socket.handshake }).save();

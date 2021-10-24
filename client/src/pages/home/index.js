@@ -26,6 +26,9 @@ export const Home = (props) => {
 
     useEffect(() => {
         generateChannel();
+        socket.on('threw', (data) => {
+            message.success(data);
+        });
     }, []);
 
     useEffect(() => {
@@ -65,6 +68,8 @@ export const Home = (props) => {
     };
 
     const throwFile = (file) => {
+        console.log(file.target.files[0].size);
+        if (file.target.files[0].size > 73400320) return message.error('File size must below 70MB.');
         getBase64(file.target.files[0]);
     };
 
@@ -107,7 +112,7 @@ export const Home = (props) => {
                             </Space>
                             <input type='file' onChange={throwFile} ref={fileRef} hidden />
                             <hr />
-                            <div>Limit 50MB per throw</div>
+                            <div>Limit 70MB per throw</div>
                             <Space>
                                 <Popconfirm
                                     title='Your file will be shared across channel.'
