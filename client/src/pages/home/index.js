@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { Row, Col, Space, message, Tooltip, Typography, Popconfirm } from 'antd';
 import io from 'socket.io-client';
 import randomstring from 'randomstring';
@@ -18,10 +18,9 @@ const socket = io(process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000', 
     upgradeTimeout: 30000,
 });
 
-export const Home = (props) => {
+export const Home = memo((props) => {
     const [channel, setChannel] = useState('');
     const [total, setTotal] = useState(0);
-    // const [channelSize, setChannelSize] = useState(1);
     const fileRef = useRef(null);
 
     useEffect(() => {
@@ -69,7 +68,6 @@ export const Home = (props) => {
     };
 
     const throwFile = (file) => {
-        console.log(file.target.files[0].size);
         if (file.target.files[0].size > 73400320) return message.error('File size must below 70MB.');
         getBase64(file.target.files[0]);
     };
@@ -141,4 +139,4 @@ export const Home = (props) => {
             </Col>
         </Row>
     );
-};
+});
