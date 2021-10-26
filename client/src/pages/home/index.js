@@ -107,7 +107,7 @@ export const Home = memo((props) => {
             type: variant,
         };
 
-        setToasts((prevToasts) => [randomToast, ...prevToasts]);
+        setToasts([randomToast]);
     };
 
     const handleRemoveToast = (id) => {
