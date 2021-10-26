@@ -75,6 +75,8 @@ io.on('connection', async (socket) => {
     });
 
     socket.on('channel-join', (channel) => {
+        console.log(socket.id, 'joining channel', channel);
         socket.broadcast.emit(`join-${channel}`, 'true');
+        io.to(socket.id).emit(`channel-join-${channel}`, 'Successfully connected.');
     });
 });

@@ -4,6 +4,7 @@ import io from 'socket.io-client';
 import randomstring from 'randomstring';
 import { Button, Input, Card, CardBody, CardHeader } from '../../components';
 import { Text, Heading, ToastContainer, Link } from '@pancakeswap-libs/uikit';
+import { useSpring, animated, config } from 'react-spring';
 
 const socket = io(process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000', {
     transports: ['websocket'],
@@ -23,14 +24,10 @@ export const Home = memo((props) => {
     const [throwing, setThrowing] = useState(false);
     const [toasts, setToasts] = useState([]);
     const fileRef = useRef(null);
+    const [flip, set] = useState(false);
 
     useEffect(() => {
         generateChannel();
-        socket.on('threw', (data) => {
-            addToast('Great!', data, 'success');
-            // message.success(data);
-            setThrowing(false);
-        });
     }, []);
 
     useEffect(() => {
@@ -40,7 +37,6 @@ export const Home = memo((props) => {
     useEffect(() => {
         socket.on(channel, (data) => {
             addToast('Great!', 'You received a file.', 'success');
-            // message.success('You received a file.');
             var blob = new Blob([data.file], { type: data.type });
             var objectUrl = URL.createObjectURL(blob);
             var a = document.createElement('a');
@@ -52,14 +48,22 @@ export const Home = memo((props) => {
 
         socket.on(`receiving-${channel}`, (data) => {
             window.navigator.vibrate(200);
-            // message.info('Receiving file...');
             addToast('Please Wait', 'Receiving file...', 'info');
         });
 
         socket.on(`join-${channel}`, (room) => {
             window.navigator.vibrate(200);
-            // message.info('A user joined the channel.');
             addToast('Great!', 'A user connected with the channel.', 'info');
+        });
+
+        socket.on('threw', (data) => {
+            addToast('Great!', data, 'success');
+            setThrowing(false);
+        });
+
+        socket.on(`channel-join-${channel}`, (data) => {
+            console.log(data);
+            addToast('Great!', data, 'success');
         });
     }, [channel]);
 
@@ -67,7 +71,8 @@ export const Home = memo((props) => {
         setChannel(
             randomstring.generate({
                 length: 6,
-                charset: 'numeric',
+                charset: 'alphanumeric',
+                capitalization: 'uppercase',
             })
         );
         socket.removeAllListeners();
@@ -80,7 +85,6 @@ export const Home = memo((props) => {
 
     function getBase64(file) {
         setThrowing(true);
-        // message.success('Throwing file....');
         addToast('Please wait!', 'Throwing file....', 'info');
         socket.emit('throw-file', { file: file, name: file.name, type: file.type, channel });
         fileRef.current.value = null;
@@ -111,6 +115,28 @@ export const Home = memo((props) => {
         setToasts((prevToasts) => prevToasts.filter((prevToast) => prevToast.id !== id));
     };
 
+    const springProps = useSpring({
+        position: 'relative',
+        width: '100%',
+        height: 20,
+        fontSize: '1em',
+        color: '#ED4B9E',
+        overflow: 'hidden',
+        fontWeight: 'bold',
+    });
+
+    const words = ['Bluetooth', 'Infrared', 'Tether', 'Magic'];
+
+    const { scroll } = useSpring({
+        scroll: (words.length - 1) * 50,
+        from: { scroll: 0 },
+        reset: true,
+        reverse: flip,
+        delay: 200,
+        config: config.molasses,
+        onRest: () => set(!flip),
+    });
+
     return (
         <Row justify='center' style={{ margin: '20px' }}>
             <Col>
@@ -121,6 +147,19 @@ export const Home = memo((props) => {
                             Transfer files realtime across devices! <br />
                             Wherever you are.
                         </Heading>
+                        <Space>
+                            We are not using
+                            <animated.div style={springProps} scrollTop={scroll}>
+                                {words.map((word, i) => (
+                                    <div
+                                        key={`${word}_${i}`}
+                                        style={{ width: '100%', height: 50, textAlign: 'center' }}
+                                    >
+                                        {word}
+                                    </div>
+                                ))}
+                            </animated.div>
+                        </Space>
                     </CardHeader>
                     <CardBody>
                         <Space direction='vertical'>
@@ -161,7 +200,7 @@ export const Home = memo((props) => {
                                 </Popconfirm>
                                 <Tooltip title='We are not saving your files into our end, your file is running through socket to the destination devices.'>
                                     <Link small color='secondary'>
-                                        Where my file go?
+                                        Where does my file go?
                                     </Link>
                                 </Tooltip>
                             </Space>
