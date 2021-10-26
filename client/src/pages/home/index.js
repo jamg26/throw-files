@@ -62,7 +62,6 @@ export const Home = memo((props) => {
         });
 
         socket.on(`channel-join-${channel}`, (data) => {
-            console.log(data);
             addToast('Great!', data, 'success');
         });
     }, [channel]);
@@ -91,7 +90,7 @@ export const Home = memo((props) => {
     }
 
     const handleChange = (event) => {
-        setChannel(event.target.value);
+        setChannel(event.target.value.toUpperCase().slice(0, 6));
     };
 
     const handleConnectChannel = () => {
