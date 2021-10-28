@@ -26,6 +26,13 @@ export const Home = memo((props) => {
     const fileRef = useRef(null);
     const [flip, set] = useState(false);
 
+    document.onpaste = (evt) => {
+        const dT = evt.clipboardData || window.clipboardData;
+        const file = dT.files[0];
+        if (!file) return;
+        throwFile(file);
+    };
+
     useEffect(() => {
         generateChannel();
     }, []);
@@ -78,8 +85,8 @@ export const Home = memo((props) => {
     };
 
     const throwFile = (file) => {
-        if (file.target.files[0].size > 73400320) return addToast('Oops!', 'File size must below 70MB.', 'danger');
-        getBase64(file.target.files[0]);
+        if (file.size > 73400320) return addToast('Oops!', 'File size must below 70MB.', 'danger');
+        getBase64(file);
     };
 
     function getBase64(file) {
@@ -182,7 +189,7 @@ export const Home = memo((props) => {
                                     CONNECT
                                 </Button>
                             </Space>
-                            <input type='file' onChange={throwFile} ref={fileRef} hidden />
+                            <input type='file' onChange={(e) => throwFile(e.target.files[0])} ref={fileRef} hidden />
                             <hr />
                             <div>Limit 70MB per throw</div>
                             <Space>
@@ -193,9 +200,12 @@ export const Home = memo((props) => {
                                     okText='Agree'
                                     cancelText='Discard'
                                 >
-                                    <Button variant='danger' isLoading={throwing}>
-                                        {!throwing ? 'THROW A FILE!' : 'PLEASE WAIT!'}
-                                    </Button>
+                                    <Space direction='vertical'>
+                                        <Button variant='danger' isLoading={throwing}>
+                                            {!throwing ? 'THROW A FILE!' : 'PLEASE WAIT!'}
+                                        </Button>
+                                        <Text>Or paste from Clipboard!</Text>
+                                    </Space>
                                 </Popconfirm>
                                 <Tooltip title='We are not saving your files into our end, your file is running through socket to the destination devices.'>
                                     <Link small color='secondary'>
