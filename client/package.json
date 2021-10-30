@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@craco/craco": "^6.3.0",
+    "@ctrl/react-adsense": "^1.3.2",
     "@pancakeswap-libs/uikit": "^0.29.4",
     "@testing-library/jest-dom": "^5.14.1",
     "@testing-library/react": "^12.1.2",

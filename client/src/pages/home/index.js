@@ -6,6 +6,8 @@ import { Button, Input, Card, CardBody, CardHeader } from '../../components';
 import { Text, Heading, ToastContainer, Link } from '@pancakeswap-libs/uikit';
 import { useSpring, animated, config } from 'react-spring';
 
+import { Adsense } from '@ctrl/react-adsense';
+
 const socket = io(process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000', {
     transports: ['websocket'],
     jsonp: false,
@@ -144,85 +146,103 @@ export const Home = memo((props) => {
     });
 
     return (
-        <Row justify='center' style={{ margin: '20px' }}>
-            <Col>
-                <ToastContainer toasts={toasts} onRemove={handleRemoveToast} />
-                <Card isActive style={{ marginTop: '100px' }}>
-                    <CardHeader>
-                        <Heading>
-                            Transfer files realtime across devices! <br />
-                            Wherever you are.
-                        </Heading>
-                        <Space>
-                            We are not using
-                            <animated.div style={springProps} scrollTop={scroll}>
-                                {words.map((word, i) => (
-                                    <div
-                                        key={`${word}_${i}`}
-                                        style={{ width: '100%', height: 50, textAlign: 'center' }}
-                                    >
-                                        {word}
-                                    </div>
-                                ))}
-                            </animated.div>
-                        </Space>
-                    </CardHeader>
-                    <CardBody>
-                        <Space direction='vertical'>
+        <>
+            <Row justify='center' style={{ margin: '20px' }}>
+                <Col>
+                    <ToastContainer toasts={toasts} onRemove={handleRemoveToast} />
+                    <Card isActive style={{ marginTop: '100px' }}>
+                        <CardHeader>
+                            <Heading>
+                                Transfer files realtime across devices! <br />
+                                Wherever you are.
+                            </Heading>
                             <Space>
-                                Transfer Channel: <Text>{channel}</Text>
-                                <Link onClick={generateChannel} small color='secondary'>
-                                    New Channel
-                                </Link>
+                                We are not using
+                                <animated.div style={springProps} scrollTop={scroll}>
+                                    {words.map((word, i) => (
+                                        <div
+                                            key={`${word}_${i}`}
+                                            style={{ width: '100%', height: 50, textAlign: 'center' }}
+                                        >
+                                            {word}
+                                        </div>
+                                    ))}
+                                </animated.div>
                             </Space>
-                            {/* <Space>
+                        </CardHeader>
+                        <CardBody>
+                            <Space direction='vertical'>
+                                <Space>
+                                    Transfer Channel: <Text>{channel}</Text>
+                                    <Link onClick={generateChannel} small color='secondary'>
+                                        New Channel
+                                    </Link>
+                                </Space>
+                                {/* <Space>
                                 Connected Users: <Text>{channelSize}</Text>
                             </Space> */}
-                            <Space>
-                                <Input
-                                    scale='sm'
-                                    onChange={handleChange}
-                                    placeholder='Connect Channel'
-                                    value={channel}
+                                <Space>
+                                    <Input
+                                        scale='sm'
+                                        onChange={handleChange}
+                                        placeholder='Connect Channel'
+                                        value={channel}
+                                    />
+                                    <Button onClick={handleConnectChannel} scale='sm'>
+                                        CONNECT
+                                    </Button>
+                                </Space>
+                                <input
+                                    type='file'
+                                    onChange={(e) => throwFile(e.target.files[0])}
+                                    ref={fileRef}
+                                    hidden
                                 />
-                                <Button onClick={handleConnectChannel} scale='sm'>
-                                    CONNECT
-                                </Button>
+                                <hr />
+                                <div>Limit 70MB per throw</div>
+                                <Space>
+                                    <Popconfirm
+                                        title='Your file will be shared across channel.'
+                                        onConfirm={() => fileRef.current.click()}
+                                        // onCancel={cancel}
+                                        okText='Agree'
+                                        cancelText='Discard'
+                                    >
+                                        <Space direction='vertical'>
+                                            <Button variant='danger' isLoading={throwing}>
+                                                {!throwing ? 'THROW A FILE!' : 'PLEASE WAIT!'}
+                                            </Button>
+                                            <Text>Or paste from Clipboard!</Text>
+                                        </Space>
+                                    </Popconfirm>
+                                    <Tooltip title='We are not saving your files into our end, your file is running through socket to the destination devices.'>
+                                        <Link small color='secondary'>
+                                            Where does my file go?
+                                        </Link>
+                                    </Tooltip>
+                                </Space>
+                                <small style={{ float: 'right', fontSize: '0.5rem' }}>
+                                    <div>Total throws: {total}</div>Need help?{' '}
+                                    <a href='https://fb.me/jammmg' target='_blank' rel='noreferrer'>
+                                        jamg
+                                    </a>
+                                </small>
                             </Space>
-                            <input type='file' onChange={(e) => throwFile(e.target.files[0])} ref={fileRef} hidden />
-                            <hr />
-                            <div>Limit 70MB per throw</div>
-                            <Space>
-                                <Popconfirm
-                                    title='Your file will be shared across channel.'
-                                    onConfirm={() => fileRef.current.click()}
-                                    // onCancel={cancel}
-                                    okText='Agree'
-                                    cancelText='Discard'
-                                >
-                                    <Space direction='vertical'>
-                                        <Button variant='danger' isLoading={throwing}>
-                                            {!throwing ? 'THROW A FILE!' : 'PLEASE WAIT!'}
-                                        </Button>
-                                        <Text>Or paste from Clipboard!</Text>
-                                    </Space>
-                                </Popconfirm>
-                                <Tooltip title='We are not saving your files into our end, your file is running through socket to the destination devices.'>
-                                    <Link small color='secondary'>
-                                        Where does my file go?
-                                    </Link>
-                                </Tooltip>
-                            </Space>
-                            <small style={{ float: 'right', fontSize: '0.5rem' }}>
-                                <div>Total throws: {total}</div>Need help?{' '}
-                                <a href='https://fb.me/jammmg' target='_blank' rel='noreferrer'>
-                                    jamg
-                                </a>
-                            </small>
-                        </Space>
-                    </CardBody>
-                </Card>
-            </Col>
-        </Row>
+                        </CardBody>
+                    </Card>
+                </Col>
+            </Row>
+            <Row justify='center'>
+                <Col>
+                    <Adsense
+                        client='ca-pub-5395653291137240'
+                        slot='7926713674'
+                        style={{ display: 'block' }}
+                        layout='in-article'
+                        format='fluid'
+                    />
+                </Col>
+            </Row>
+        </>
     );
 });
