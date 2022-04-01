@@ -36,6 +36,7 @@ export const Home = memo((props) => {
     
     useEffect(() => {
         instance.listenOnInput(document.getElementById("file_input"));
+        instance.chunkSize = 1024 * 2000;
         instance.addEventListener("progress", p => {
             const percentage = (p.bytesLoaded / p.file.size * 100).toFixed(2)
             setProgress(percentage)
