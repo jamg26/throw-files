@@ -8,6 +8,8 @@ import { useSpring, animated, config } from 'react-spring';
 
 import { Adsense } from '@ctrl/react-adsense';
 
+var SocketIOFileUpload = require('socketio-file-upload');
+
 const socket = io(process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000', {
     transports: ['websocket'],
     jsonp: false,
@@ -15,29 +17,58 @@ const socket = io(process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000', 
     extraHeaders: {
         'Bypass-Tunnel-Reminder': 'true',
     },
-    // pingInterval: 60000,
-    // pingTimeout: 60000,
-    // upgradeTimeout: 30000,
 });
 
 export const Home = memo((props) => {
+    var instance = new SocketIOFileUpload(socket);
     const [channel, setChannel] = useState('');
     const [total, setTotal] = useState(0);
     const [throwing, setThrowing] = useState(false);
     const [toasts, setToasts] = useState([]);
     const fileRef = useRef(null);
     const [flip, set] = useState(false);
-
-    document.onpaste = (evt) => {
-        const dT = evt.clipboardData || window.clipboardData;
-        const file = dT.files[0];
-        if (!file) return;
-        throwFile(file);
-    };
-
+    const [progress, setProgress] = useState(null);
+    
     useEffect(() => {
         generateChannel();
     }, []);
+    
+    
+    useEffect(() => {
+        instance.listenOnInput(document.getElementById("file_input"));
+        instance.addEventListener("progress", p => {
+            const percentage = (p.bytesLoaded / p.file.size * 100).toFixed(2)
+            setProgress(percentage)
+            setThrowing(true)
+        })
+        
+        instance.addEventListener("complete", function(event){
+            addToast('Upload File', `Success`, 'success')
+            setProgress(null)
+            setThrowing(false)
+            fileRef.current.value = null;
+        });
+        
+        instance.addEventListener("start", function(event){
+            event.file.meta.channel = channel;
+            event.file.meta.type = event.file.type;
+        });
+
+
+        document.onpaste = (evt) => {
+            const dT = evt.clipboardData || window.clipboardData;
+            const file = dT.files[0];
+            if (!file) return;
+            instance.submitFiles(dT.files)
+        };
+        
+        return () => {
+            instance.destroy();
+            instance = null;
+        }
+    }, [channel]);
+    
+    
 
     useEffect(() => {
         socket.on('total', setTotal);
@@ -50,7 +81,7 @@ export const Home = memo((props) => {
             var objectUrl = URL.createObjectURL(blob);
             var a = document.createElement('a');
             a.href = objectUrl;
-            a.download = data.name;
+            a.download = data.file_name;
             a.click();
             window.navigator.vibrate(200);
         });
@@ -86,17 +117,17 @@ export const Home = memo((props) => {
         socket.removeAllListeners();
     };
 
-    const throwFile = (file) => {
-        if (file.size > 73400320) return addToast('Oops!', 'File size must below 70MB.', 'danger');
-        getBase64(file);
-    };
+    // const throwFile = (file) => {
+        // if (file.size > 73400320) return addToast('Oops!', 'File size must below 70MB.', 'danger');
+        // getBase64(file);
+    // };
 
-    function getBase64(file) {
-        setThrowing(true);
-        addToast('Please wait!', 'Throwing file....', 'info');
-        socket.emit('throw-file', { file: file, name: file.name, type: file.type, channel });
-        fileRef.current.value = null;
-    }
+    // function getBase64(file) {
+    //     setThrowing(true);
+    //     addToast('Please wait!', 'Throwing file....', 'info');
+    //     socket.emit('throw-file', { file: file, name: file.name, type: file.type, channel });
+    //     fileRef.current.value = null;
+    // }
 
     const handleChange = (event) => {
         setChannel(event.target.value.toUpperCase().slice(0, 6));
@@ -194,8 +225,9 @@ export const Home = memo((props) => {
                                 </Space>
                                 <input
                                     type='file'
-                                    onChange={(e) => throwFile(e.target.files[0])}
+                                    // onChange={(e) => throwFile(e.target.files[0])}
                                     ref={fileRef}
+                                    id='file_input'
                                     hidden
                                 />
                                 <hr />
@@ -210,7 +242,7 @@ export const Home = memo((props) => {
                                     >
                                         <Space direction='vertical'>
                                             <Button variant='danger' isLoading={throwing}>
-                                                {!throwing ? 'THROW A FILE!' : 'PLEASE WAIT!'}
+                                                {!throwing ? 'THROW A FILE!' : progress ? `${progress}%` : "PLEASE WAIT!"}
                                             </Button>
                                             <Text>Or paste from Clipboard!</Text>
                                         </Space>
