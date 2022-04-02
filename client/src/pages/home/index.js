@@ -7,6 +7,7 @@ import { Text, Heading, ToastContainer, Link } from '@pancakeswap-libs/uikit';
 import { useSpring, animated, config } from 'react-spring';
 import { Adsense } from '@ctrl/react-adsense';
 import BuyMeACoffee from '../../media/buymeacoffee.png'
+import styled from 'styled-components'
 
 var SocketIOFileUpload = require('socketio-file-upload');
 
@@ -208,7 +209,7 @@ export const Home = memo((props) => {
     });
 
     return (
-        <>
+        <HomeComponent>
             <Row justify='center' style={{ margin: '20px' }}>
                 <Col>
                     <ToastContainer toasts={toasts} onRemove={handleRemoveToast} />
@@ -311,6 +312,10 @@ export const Home = memo((props) => {
                     />
                 </Col>
             </Row>
-        </>
+        </HomeComponent>
     );
 });
+
+const HomeComponent = styled.div`
+    
+`
