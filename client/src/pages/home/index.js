@@ -5,8 +5,8 @@ import randomstring from 'randomstring';
 import { Button, Input, Card, CardBody, CardHeader } from '../../components';
 import { Text, Heading, ToastContainer, Link } from '@pancakeswap-libs/uikit';
 import { useSpring, animated, config } from 'react-spring';
-
 import { Adsense } from '@ctrl/react-adsense';
+import BuyMeACoffee from '../../media/buymeacoffee.png'
 
 var SocketIOFileUpload = require('socketio-file-upload');
 
@@ -57,6 +57,7 @@ export const Home = memo((props) => {
         });
         
         instance.addEventListener("start", function(event){
+            addToast('Please wait!', 'Throwing file....', 'info');
             uploading = true
             event.file.meta.channel = channel;
             event.file.meta.type = event.file.type;
@@ -129,6 +130,7 @@ export const Home = memo((props) => {
             const dT = evt.clipboardData || window.clipboardData;
             const file = dT.files[0];
             if (!file) return;
+            console.log(dT.files)
             if(uploading) return addToast('Oops!', 'Your files are currently uploading.', 'danger');
             instance.submitFiles(dT.files)
         };
@@ -284,11 +286,14 @@ export const Home = memo((props) => {
                                     </Tooltip>
                                 </Space>
                                 <small style={{ float: 'right', fontSize: '0.5rem' }}>
-                                    <div>Total throws: {total}</div>Need help?{' '}
-                                    <a href='https://fb.me/jammmg' target='_blank' rel='noreferrer'>
-                                        jamg
-                                    </a>
-                                    <p>throwmyfile | {new Date().getFullYear()}</p>
+                                    <div>Need help?{' '}
+                                        <a href='https://fb.me/jammmg' target='_blank' rel='noreferrer'>
+                                            jamg
+                                        </a>
+                                    </div>
+                                    <div>Total throws: {total}</div>
+                                    <p>throwmyfile.com @{new Date().getFullYear()}</p>
+                                    <a href="https://buymeacoffee.com/jamg" target="_blank" rel="noreferrer"><img src={BuyMeACoffee} height={50} style={{margin: "-10px"}} /></a>
                                 </small>
                             </Space>
                         </CardBody>
