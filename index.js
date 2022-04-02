@@ -53,52 +53,42 @@ console.log('Server is Listening on: ', port);
 const Throws = mongoose.model('throws');
 
 io.on('connection', async (socket) => {
-    let buffers = []
     let file_name = ""
     let channel = ""
     let type = ""
-    const totalThrows = await Throws.find();
-    io.sockets.emit('total', totalThrows.length);
+    let size = ""
 
     var instance = new siofu();
     instance.listen(socket);
 
 
     socket.on('siofu_start', async (data) => {
-        buffers = []
         file_name = data.name
         channel = data.meta.channel
         type = data.meta.type
+        size = data.size
+        socket.broadcast.emit(`receiving-${channel}`, { type, file_name, size });
     })
     
     socket.on('siofu_progress', async (data) => {
-        buffers.push(data.content)
+        socket.broadcast.emit(channel, { file: data.content, type, file_name, size });
     })
     
     socket.on('siofu_done', async (data) => {
-        const resultBuffer = Buffer.concat(buffers);
-        io.to(socket.id).emit('threw', 'File has been threw.');
-        socket.broadcast.emit(`receiving-${channel}`, { type: type });
-        socket.broadcast.emit(channel, { file: resultBuffer, type, file_name });
-        new Throws({ handshake: socket.handshake }).save();
-        const totalThrows = await Throws.find();
-        io.sockets.emit('total', totalThrows.length);
+        socket.broadcast.emit(`done-${channel}`, { type, file_name });
+        await new Throws({ handshake: socket.handshake }).save();
+        const totalThrows = await Throws.countDocuments();
+        io.sockets.emit('total', totalThrows);
     })
     
-
-    // socket.on('throw-file', async (data) => {
-    //     console.log('file received, sending to channel#:', data.channel);
-    //     io.to(socket.id).emit('threw', 'File has been threw.');
-    //     socket.broadcast.emit(`receiving-${data.channel}`, { ...data, type: data.type });
-    //     socket.broadcast.emit(data.channel, { ...data, type: data.type, });
-    //     new Throws({ handshake: socket.handshake }).save();
-    //     const totalThrows = await Throws.find();
-    //     io.sockets.emit('total', totalThrows.length);
-    // });
 
     socket.on('channel-join', (channel) => {
         console.log(socket.id, 'joining channel', channel);
         socket.broadcast.emit(`join-${channel}`, 'true');
         io.to(socket.id).emit(`channel-join-${channel}`, 'Successfully connected.');
     });
+
+
+    const totalThrows = await Throws.countDocuments();
+    io.sockets.emit('total', totalThrows);
 });

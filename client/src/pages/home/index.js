@@ -28,6 +28,9 @@ export const Home = memo((props) => {
     const fileRef = useRef(null);
     const [flip, set] = useState(false);
     const [progress, setProgress] = useState(null);
+    const [size, setSize] = useState(null);
+    let buffer = []
+    let uploading = false
     
     useEffect(() => {
         generateChannel();
@@ -37,13 +40,16 @@ export const Home = memo((props) => {
     useEffect(() => {
         instance.listenOnInput(document.getElementById("file_input"));
         instance.chunkSize = 1024 * 2000;
+        instance.maxFileSize = 209715200 // 100mb
         instance.addEventListener("progress", p => {
             const percentage = (p.bytesLoaded / p.file.size * 100).toFixed(2)
             setProgress(percentage)
             setThrowing(true)
+            setSize({ received: p.bytesLoaded, original: p.file.size })
         })
         
         instance.addEventListener("complete", function(event){
+            uploading = false
             addToast('Upload File', `Success`, 'success')
             setProgress(null)
             setThrowing(false)
@@ -51,17 +57,21 @@ export const Home = memo((props) => {
         });
         
         instance.addEventListener("start", function(event){
+            uploading = true
             event.file.meta.channel = channel;
             event.file.meta.type = event.file.type;
+            event.file.meta.size = event.file.size;
         });
 
-
-        document.onpaste = (evt) => {
-            const dT = evt.clipboardData || window.clipboardData;
-            const file = dT.files[0];
-            if (!file) return;
-            instance.submitFiles(dT.files)
-        };
+        instance.addEventListener("error", function(data){
+            uploading = false
+            if (data.code === 1) {
+                addToast('Oops!', 'File size must below 200MB.', 'danger');
+                setProgress(null)
+                setThrowing(false)
+                fileRef.current.value = null;
+            }
+        });
         
         return () => {
             instance.destroy();
@@ -76,20 +86,29 @@ export const Home = memo((props) => {
     }, [total]);
 
     useEffect(() => {
+        let bytes = 0
         socket.on(channel, (data) => {
+            buffer.push(data.file)
+            bytes += data.file.byteLength
+            const percentage = (bytes / data.size * 100).toFixed(2)
+            setProgress(percentage)
+            setThrowing(true)
+            setSize({ received: bytes , original: data.size })
+        });
+
+        socket.on(`done-${channel}`, (data) => {
             addToast('Great!', 'You received a file.', 'success');
-            var blob = new Blob([data.file], { type: data.type });
+            var blob = new Blob(buffer, { type: data.type });
             var objectUrl = URL.createObjectURL(blob);
             var a = document.createElement('a');
             a.href = objectUrl;
             a.download = data.file_name;
             a.click();
             window.navigator.vibrate(200);
-        });
-
-        socket.on(`receiving-${channel}`, (data) => {
-            window.navigator.vibrate(200);
-            addToast('Please Wait', 'Receiving file...', 'info');
+            buffer = []
+            bytes = 0
+            setProgress(null)
+            setThrowing(false)
         });
 
         socket.on(`join-${channel}`, (room) => {
@@ -97,14 +116,23 @@ export const Home = memo((props) => {
             addToast('Great!', 'A user connected with the channel.', 'info');
         });
 
-        socket.on('threw', (data) => {
-            addToast('Great!', data, 'success');
-            setThrowing(false);
+        socket.on(`receiving-${channel}`, (data) => {
+            window.navigator.vibrate(200);
+            addToast('Please Wait', 'Receiving file...', 'info');
         });
 
         socket.on(`channel-join-${channel}`, (data) => {
             addToast('Great!', data, 'success');
         });
+
+        document.onpaste = (evt) => {
+            const dT = evt.clipboardData || window.clipboardData;
+            const file = dT.files[0];
+            if (!file) return;
+            if(uploading) return addToast('Oops!', 'Your files are currently uploading.', 'danger');
+            instance.submitFiles(dT.files)
+        };
+        
     }, [channel]);
 
     const generateChannel = () => {
@@ -182,7 +210,7 @@ export const Home = memo((props) => {
             <Row justify='center' style={{ margin: '20px' }}>
                 <Col>
                     <ToastContainer toasts={toasts} onRemove={handleRemoveToast} />
-                    <Card isActive style={{ marginTop: '100px' }}>
+                    <Card isWarning style={{ marginTop: '100px' }}>
                         <CardHeader>
                             <Heading>
                                 Transfer files realtime across devices! <br />
@@ -232,7 +260,8 @@ export const Home = memo((props) => {
                                     hidden
                                 />
                                 <hr />
-                                <div>Limit 70MB per throw</div>
+                                {size ? 
+                                <div>{((size?.received || 0) / 1048576).toFixed(2)} / {((size?.original || 0) / 1048576).toFixed(2)} MB</div> : null}
                                 <Space>
                                     <Popconfirm
                                         title='Your file will be shared across channel.'
@@ -250,7 +279,7 @@ export const Home = memo((props) => {
                                     </Popconfirm>
                                     <Tooltip title='We are not saving your files into our end, your file is running through socket to the destination devices.'>
                                         <Link small color='secondary'>
-                                            Where does my file go?
+                                            Where does my file will go?
                                         </Link>
                                     </Tooltip>
                                 </Space>
@@ -259,6 +288,7 @@ export const Home = memo((props) => {
                                     <a href='https://fb.me/jammmg' target='_blank' rel='noreferrer'>
                                         jamg
                                     </a>
+                                    <p>throwmyfile | {new Date().getFullYear()}</p>
                                 </small>
                             </Space>
                         </CardBody>
