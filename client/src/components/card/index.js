@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { Card as Component, CardBody as Component2, CardHeader as Component3 } from '@pancakeswap-libs/uikit';
+import { Card as Component, CardBody as Component2, CardHeader as Component3 } from '@pancakeswap/uikit';
 
 export const Card = (props) => {
     return <Container {...props}>{props.children}</Container>;

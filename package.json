@@ -17,19 +17,19 @@
   "dependencies": {
     "bcrypt-nodejs": "0.0.3",
     "dotenv": "^10.0.0",
-    "express": "^4.17.1",
+    "express": "^4.17.3",
     "jwt-simple": "^0.5.6",
-    "mongoose": "^6.0.10",
+    "mongoose": "^6.2.10",
     "morgan": "^1.10.0",
     "passport": "^0.4.1",
     "passport-jwt": "^4.0.0",
     "passport-local": "^1.0.0",
-    "socket.io": "^4.3.1",
+    "socket.io": "^4.4.1",
     "socket.io-stream": "^0.9.1",
     "socketio-file-upload": "^0.7.3"
   },
   "devDependencies": {
-    "concurrently": "^6.3.0",
-    "nodemon": "^2.0.13"
+    "concurrently": "^6.5.1",
+    "nodemon": "^2.0.15"
   }
 }

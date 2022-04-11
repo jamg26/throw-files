@@ -1,4 +1,4 @@
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 
 import App from './App';
 import * as serviceWorker from './serviceWorker';
@@ -9,7 +9,9 @@ import reducers from './reducers';
 import reduxThunk from 'redux-thunk';
 import axios from 'axios';
 import { ThemeProvider } from 'styled-components';
-import { light } from '@pancakeswap-libs/uikit';
+import { light } from '@pancakeswap/uikit';
+const container = document.getElementById('root');
+const root = createRoot(container);
 
 axios.interceptors.request.use(function (config) {
     const token = `${localStorage.getItem('token')}`;
@@ -28,14 +30,18 @@ const store = createStore(
     composeWithDevTools(applyMiddleware(reduxThunk))
 );
 
-ReactDOM.render(
+root.render(
     <Provider store={store}>
         <ThemeProvider theme={light}>
             <App />
         </ThemeProvider>
-    </Provider>,
-    document.getElementById('root')
+    </Provider>
 );
+
+// ReactDOM.render(
+//    ,
+//     document.getElementById('root')
+// );
 
 // If you want your app to work offline and load faster, you can change
 // unregister() to register() below. Note this comes with some pitfalls.

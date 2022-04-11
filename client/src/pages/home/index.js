@@ -3,9 +3,9 @@ import { Row, Col, Space, Tooltip, Popconfirm } from 'antd';
 import io from 'socket.io-client';
 import randomstring from 'randomstring';
 import { Button, Input, Card, CardBody, CardHeader } from '../../components';
-import { Text, Heading, ToastContainer, Link } from '@pancakeswap-libs/uikit';
+import { Text, Heading, Link } from '@pancakeswap/uikit';
+import { ToastContainer } from '@pancakeswap-libs/uikit';
 import { useSpring, animated, config } from 'react-spring';
-import { Adsense } from '@ctrl/react-adsense';
 import BuyMeACoffee from '../../media/buymeacoffee.png'
 import styled from 'styled-components'
 
@@ -33,6 +33,28 @@ export const Home = memo((props) => {
     let buffer = []
     let uploading = false
     
+    const springProps = useSpring({
+        position: 'relative',
+        width: '100%',
+        height: 20,
+        fontSize: '1em',
+        color: '#ED4B9E',
+        overflow: 'hidden',
+        fontWeight: 'bold',
+    });
+
+    const words = ['Bluetooth', 'Infrared', 'Tether', 'Magic'];
+
+    const { scroll } = useSpring({
+        scroll: (words.length - 1) * 50,
+        from: { scroll: 0 },
+        reset: true,
+        reverse: flip,
+        delay: 200,
+        config: config.molasses,
+        onRest: () => set(!flip),
+    });
+
     useEffect(() => {
         generateChannel();
     }, []);
@@ -186,28 +208,6 @@ export const Home = memo((props) => {
         setToasts((prevToasts) => prevToasts.filter((prevToast) => prevToast.id !== id));
     };
 
-    const springProps = useSpring({
-        position: 'relative',
-        width: '100%',
-        height: 20,
-        fontSize: '1em',
-        color: '#ED4B9E',
-        overflow: 'hidden',
-        fontWeight: 'bold',
-    });
-
-    const words = ['Bluetooth', 'Infrared', 'Tether', 'Magic'];
-
-    const { scroll } = useSpring({
-        scroll: (words.length - 1) * 50,
-        from: { scroll: 0 },
-        reset: true,
-        reverse: flip,
-        delay: 200,
-        config: config.molasses,
-        onRest: () => set(!flip),
-    });
-
     return (
         <HomeComponent>
             <Row justify='center' style={{ margin: '20px' }}>
@@ -287,9 +287,9 @@ export const Home = memo((props) => {
                                     </Tooltip>
                                 </Space>
                                 <small style={{ float: 'right', fontSize: '0.5rem' }}>
-                                    <div>Need help?{' '}
+                                    <div>
                                         <a href='https://fb.me/jammmg' target='_blank' rel='noreferrer'>
-                                            jamg
+                                            Need Help?
                                         </a>
                                     </div>
                                     <div>Total throws: {total}</div>
@@ -299,17 +299,6 @@ export const Home = memo((props) => {
                             </Space>
                         </CardBody>
                     </Card>
-                </Col>
-            </Row>
-            <Row justify='center'>
-                <Col>
-                    <Adsense
-                        client='ca-pub-5395653291137240'
-                        slot='7926713674'
-                        style={{ display: 'block' }}
-                        layout='in-article'
-                        format='fluid'
-                    />
                 </Col>
             </Row>
         </HomeComponent>
