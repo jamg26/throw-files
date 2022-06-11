@@ -5,7 +5,7 @@ const morgan = require('morgan');
 const app = express();
 const mongoose = require('mongoose');
 const siofu = require("socketio-file-upload");
-
+const fs = require("fs");
 require('./models/user');
 require('./models/throw');
 const router = require('./router');
