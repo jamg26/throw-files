@@ -28,9 +28,14 @@ if (['production'].includes(process.env.NODE_ENV)) {
     });
 }
 
+const httpsOptions = {
+              key: fs.readFileSync(`./config/localhost.decrypted.key`),
+              cert: fs.readFileSync(`./config/localhost.crt`),
+          }
+
 // Server Setup
 const port = process.env.PORT || 5000;
-const server = http.createServer(app);
+const server = http.createServer(httpsOptions, app);
 const { Server } = require('socket.io');
 const io = new Server(server, {
     cors: {
