@@ -63,7 +63,7 @@ export const Home = memo((props) => {
     useEffect(() => {
         instance.listenOnInput(document.getElementById("file_input"));
         instance.chunkSize = 1024 * 2000;
-        instance.maxFileSize = 209715200 // 100mb
+        instance.maxFileSize = 1024000000 //209715200 // 100mb
         instance.addEventListener("progress", p => {
             const percentage = (p.bytesLoaded / p.file.size * 100).toFixed(2)
             setProgress(percentage)
@@ -90,7 +90,7 @@ export const Home = memo((props) => {
         instance.addEventListener("error", function(data){
             uploading = false
             if (data.code === 1) {
-                addToast('Oops!', 'File size must below 200MB.', 'danger');
+                addToast('Oops!', 'File size exceed.', 'danger');
                 setProgress(null)
                 setThrowing(false)
                 fileRef.current.value = null;
