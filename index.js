@@ -9,6 +9,7 @@ const fs = require("fs");
 require('./models/user');
 require('./models/throw');
 const router = require('./router');
+const path = require('path');
 
 mongoose.connect(process.env.MONGO_URI);
 
@@ -20,11 +21,7 @@ router(app);
 
 if (['production'].includes(process.env.NODE_ENV)) {
     app.use(express.static(path.join(__dirname, 'build')));
-    
     //app.use(express.static('client/build'));
-
-    const path = require('path');
-
     app.get('*', (req, res) => {
         res.sendFile(path.resolve('client', 'build', 'index.html'));
     });
