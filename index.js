@@ -22,7 +22,7 @@ router(app);
 if (['production'].includes(process.env.NODE_ENV)) {
     app.use(express.static(path.join(__dirname, 'build')));
     app.get("/service-worker.js", (req, res) => {
-      res.sendFile(path.resolve("client, "build", "service-worker.js"));
+      res.sendFile(path.resolve('client', 'build', 'service-worker.js'));
     });
     app.get('*', (req, res) => {
         res.sendFile(path.resolve('client', 'build', 'index.html'));
