@@ -1,6 +1,6 @@
 require('dotenv').config();
 const express = require('express');
-const http = require('https');
+const http = require('http');
 const morgan = require('morgan');
 const app = express();
 const mongoose = require('mongoose');
@@ -31,8 +31,8 @@ if (['production'].includes(process.env.NODE_ENV)) {
 }
 
 const httpsOptions = {
-              key: fs.readFileSync(`./config/localhost.decrypted.key`),
-              cert: fs.readFileSync(`./config/localhost.crt`),
+            //   key: fs.readFileSync(`./config/localhost.decrypted.key`),
+            //   cert: fs.readFileSync(`./config/localhost.crt`),
           }
 
 // Server Setup
