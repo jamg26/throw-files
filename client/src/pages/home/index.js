@@ -287,13 +287,10 @@ export const Home = memo((props) => {
                                     </Tooltip>
                                 </Space>
                                 <small style={{ float: 'right', fontSize: '0.5rem' }}>
-                                    <div>
-                                        <a href='https://fb.me/jammmg' target='_blank' rel='noreferrer'>
-                                            Need Help?
-                                        </a>
-                                    </div>
                                     <div>Total throws: {total}</div>
                                     <p>throwmyfile.com @{new Date().getFullYear()}</p>
+                                    <a href="tel:+639304699769" target="_blank" rel="noreferrer">+63 930 4699 769</a>
+                                    <a href="mailto:jammmg26@gmail.com" target="_blank" rel="noreferrer">jammmg26@gmail.com</a>
                                     <a href="https://buymeacoffee.com/jamg" target="_blank" rel="noreferrer"><img src={BuyMeACoffee} height={50} style={{margin: "-10px"}} /></a>
                                 </small>
                             </Space>
