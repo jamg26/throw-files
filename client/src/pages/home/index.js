@@ -289,8 +289,8 @@ export const Home = memo((props) => {
                                 <small style={{ float: 'right', fontSize: '0.5rem' }}>
                                     <div>Total throws: {total}</div>
                                     <p>throwmyfile.com @{new Date().getFullYear()}</p>
-                                    <a href="tel:+639304699769" target="_blank" rel="noreferrer">+63 930 4699 769</a>
-                                    <a href="mailto:jammmg26@gmail.com" target="_blank" rel="noreferrer">jammmg26@gmail.com</a>
+                                    <p><a href="tel:+639304699769" target="_blank" rel="noreferrer">+63 930 4699 769</a></p>
+                                    <p><a href="mailto:jammmg26@gmail.com" target="_blank" rel="noreferrer">jammmg26@gmail.com</a></p>
                                     <a href="https://buymeacoffee.com/jamg" target="_blank" rel="noreferrer"><img src={BuyMeACoffee} height={50} style={{margin: "-10px"}} /></a>
                                 </small>
                             </Space>
