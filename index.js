@@ -1,17 +1,22 @@
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
+const fs = require('fs');
 const morgan = require('morgan');
 const app = express();
 const mongoose = require('mongoose');
 const siofu = require("socketio-file-upload");
-const fs = require("fs");
+
 require('./models/user');
 require('./models/throw');
 const router = require('./router');
 const path = require('path');
 
-mongoose.connect(process.env.MONGO_URI);
+// DB Setup
+mongoose.connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+});
 
 // App Setup
 app.use(morgan('tiny'));
@@ -20,24 +25,22 @@ app.use(siofu.router)
 router(app);
 
 if (['production'].includes(process.env.NODE_ENV)) {
-//     app.use(express.static('client/build'));
     app.use(express.static(path.join(__dirname, 'client/build')));
     app.get("/service-worker.js", (req, res) => {
-      res.sendFile(path.resolve('client', 'build', 'worker.js'));
+        res.sendFile(path.resolve('client', 'build', 'worker.js'));
     });
     app.get('*', (req, res) => {
         res.sendFile(path.resolve('client', 'build', 'index.html'));
     });
 }
 
-const httpsOptions = {
-            //   key: fs.readFileSync(`./config/localhost.decrypted.key`),
-            //   cert: fs.readFileSync(`./config/localhost.crt`),
-          }
+// const httpsOptions = {
+//     key: fs.readFileSync(`./config/localhost.decrypted.key`),
+//     cert: fs.readFileSync(`./config/localhost.crt`),
+// };
 
-// Server Setup
 const port = process.env.PORT || 5000;
-const server = http.createServer(httpsOptions, app);
+const server = http.createServer(app);
 const { Server } = require('socket.io');
 const io = new Server(server, {
     cors: {
@@ -46,7 +49,7 @@ const io = new Server(server, {
     },
     maxHttpBufferSize: 73400320,
     allowRequest: (req, callback) => {
-        const backend = process.env.BACKEND_JAMG || 'http://localhost:3000';
+        const backend = process.env.BACKEND_JAMG || 'https://localhost:3000';
         if (req.headers.origin !== backend) {
             return callback(null, false);
         }
@@ -54,8 +57,9 @@ const io = new Server(server, {
     },
 });
 
-server.listen(port);
-console.log('Server is Listening on: ', port);
+server.listen(port, () => {
+    console.log(`HTTPS Server is Listening on: ${port}`);
+});
 
 const Throws = mongoose.model('throws');
 
@@ -75,26 +79,23 @@ io.on('connection', async (socket) => {
         type = data.meta.type
         size = data.size
         socket.broadcast.emit(`receiving-${channel}`, { type, file_name, size });
-    })
-    
+    });
     socket.on('siofu_progress', async (data) => {
         socket.broadcast.emit(channel, { file: data.content, type, file_name, size });
-    })
+    });
     
     socket.on('siofu_done', async (data) => {
         socket.broadcast.emit(`done-${channel}`, { type, file_name });
         await new Throws({ handshake: socket.handshake }).save();
         const totalThrows = await Throws.countDocuments();
         io.sockets.emit('total', totalThrows);
-    })
-    
+    });
 
     socket.on('channel-join', (channel) => {
         console.log(socket.id, 'joining channel', channel);
         socket.broadcast.emit(`join-${channel}`, 'true');
         io.to(socket.id).emit(`channel-join-${channel}`, 'Successfully connected.');
     });
-
 
     const totalThrows = await Throws.countDocuments();
     io.sockets.emit('total', totalThrows);
