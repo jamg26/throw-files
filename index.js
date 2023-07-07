@@ -1,16 +1,22 @@
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
-const fs = require('fs');
 const morgan = require('morgan');
-const app = express();
 const mongoose = require('mongoose');
 const siofu = require("socketio-file-upload");
+const { Server } = require('socket.io');
+const { join, resolve } = require('path');
+const router = require('./router');
+
+const app = express();
+const port = process.env.PORT || 5000;
+const server = http.createServer(app);
+const io = new Server(server, getServerOptions());
+const backend = process.env.BACKEND_JAMG || 'https://localhost:3000';
 
 require('./models/user');
 require('./models/throw');
-const router = require('./router');
-const path = require('path');
+const Throws = mongoose.model('throws');
 
 // DB Setup
 mongoose.connect(process.env.MONGO_URI, {
@@ -21,82 +27,80 @@ mongoose.connect(process.env.MONGO_URI, {
 // App Setup
 app.use(morgan('tiny'));
 app.use(express.json({ limit: '50mb' }));
-app.use(siofu.router)
+app.use(siofu.router);
 router(app);
+setupProductionEnv(app);
 
-if (['production'].includes(process.env.NODE_ENV)) {
-    app.use(express.static(path.join(__dirname, 'client/build')));
-    app.get("/service-worker.js", (req, res) => {
-        res.sendFile(path.resolve('client', 'build', 'worker.js'));
+server.listen(port, () => console.log(`HTTPS Server is Listening on: ${port}`));
+
+io.on('connection', handleSocketConnection);
+
+function handleSocketConnection(socket) {
+    const fileUploadInstance = new siofu();
+    let fileMetadata = {};
+
+    fileUploadInstance.listen(socket);
+    socket.on('siofu_start', data => handleUploadStart(socket, data, fileMetadata));
+    socket.on('siofu_progress', data => handleUploadProgress(socket, data, fileMetadata));
+    socket.on('siofu_done', () => handleUploadDone(socket, fileMetadata));
+    socket.on('channel-join', handleChannelJoin);
+
+    emitTotalThrows();
+}
+
+async function handleUploadStart(socket, data, fileMetadata) {
+    Object.assign(fileMetadata, {
+        name: data.name,
+        channel: data.meta.channel,
+        type: data.meta.type,
+        size: data.size,
     });
-    app.get('*', (req, res) => {
-        res.sendFile(path.resolve('client', 'build', 'index.html'));
+    socket.broadcast.emit(`receiving-${fileMetadata.channel}`, fileMetadata);
+}
+
+function handleUploadProgress(socket, data, fileMetadata) {
+    socket.broadcast.emit(fileMetadata.channel, {
+        file: data.content,
+        ...fileMetadata
     });
 }
 
-// const httpsOptions = {
-//     key: fs.readFileSync(`./config/localhost.decrypted.key`),
-//     cert: fs.readFileSync(`./config/localhost.crt`),
-// };
+async function handleUploadDone(socket, fileMetadata) {
+    socket.broadcast.emit(`done-${fileMetadata.channel}`, { type: fileMetadata.type, file_name: fileMetadata.name });
+    await new Throws({ handshake: socket.handshake }).save();
+    emitTotalThrows();
+}
 
-const port = process.env.PORT || 5000;
-const server = http.createServer(app);
-const { Server } = require('socket.io');
-const io = new Server(server, {
-    cors: {
-        origin: true,
-        credentials: true,
-    },
-    maxHttpBufferSize: 73400320,
-    allowRequest: (req, callback) => {
-        const backend = process.env.BACKEND_JAMG || 'https://localhost:3000';
-        if (req.headers.origin !== backend) {
-            return callback(null, false);
-        }
-        callback(null, true);
-    },
-});
+function handleChannelJoin(channel) {
+    console.log(this.id, 'joining channel', channel);
+    this.broadcast.emit(`join-${channel}`, 'true');
+    io.to(this.id).emit(`channel-join-${channel}`, 'Successfully connected.');
+}
 
-server.listen(port, () => {
-    console.log(`HTTPS Server is Listening on: ${port}`);
-});
-
-const Throws = mongoose.model('throws');
-
-io.on('connection', async (socket) => {
-    let file_name = ""
-    let channel = ""
-    let type = ""
-    let size = ""
-
-    var instance = new siofu();
-    instance.listen(socket);
-
-
-    socket.on('siofu_start', async (data) => {
-        file_name = data.name
-        channel = data.meta.channel
-        type = data.meta.type
-        size = data.size
-        socket.broadcast.emit(`receiving-${channel}`, { type, file_name, size });
-    });
-    socket.on('siofu_progress', async (data) => {
-        socket.broadcast.emit(channel, { file: data.content, type, file_name, size });
-    });
-    
-    socket.on('siofu_done', async (data) => {
-        socket.broadcast.emit(`done-${channel}`, { type, file_name });
-        await new Throws({ handshake: socket.handshake }).save();
-        const totalThrows = await Throws.countDocuments();
-        io.sockets.emit('total', totalThrows);
-    });
-
-    socket.on('channel-join', (channel) => {
-        console.log(socket.id, 'joining channel', channel);
-        socket.broadcast.emit(`join-${channel}`, 'true');
-        io.to(socket.id).emit(`channel-join-${channel}`, 'Successfully connected.');
-    });
-
+async function emitTotalThrows() {
     const totalThrows = await Throws.countDocuments();
     io.sockets.emit('total', totalThrows);
-});
+}
+
+function getServerOptions() {
+    return {
+        cors: {
+            origin: true,
+            credentials: true,
+        },
+        maxHttpBufferSize: 73400320,
+        allowRequest: (req, callback) => {
+            const origin = req.headers.origin;
+            callback(null, origin === backend);
+        },
+    }
+}
+
+function setupProductionEnv(app) {
+    if (process.env.NODE_ENV === 'production') {
+        const buildPath = join(__dirname, 'client/build');
+        app.use(express.static(buildPath));
+        app.get("/service-worker.js", (req, res) => res.sendFile(resolve('client', 'build', 'worker.js')));
+        app.get('*', (req, res) => res.sendFile(resolve('client', 'build', 'index.html')));
+    }
+}
