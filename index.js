@@ -40,6 +40,7 @@ function handleSocketConnection(socket) {
     let fileMetadata = {};
 
     fileUploadInstance.listen(socket);
+    fileUploadInstance.on('error', handleUploadError);
     socket.on('siofu_start', data => handleUploadStart(socket, data, fileMetadata));
     socket.on('siofu_progress', data => handleUploadProgress(socket, data, fileMetadata));
     socket.on('siofu_done', () => handleUploadDone(socket, fileMetadata));
@@ -48,6 +49,10 @@ function handleSocketConnection(socket) {
     socket.on('channel-join', handleChannelJoin);
 
     emitTotalThrows();
+}
+
+function handleUploadError(error) {
+    console.log('Upload error:', error.message);
 }
 
 function handleUploadError(socket, error) {
