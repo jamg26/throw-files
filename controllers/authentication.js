@@ -1,6 +1,6 @@
 const jwt = require("jwt-simple");
 const mongoose = require("mongoose");
-const User = mongoose.model("user");
+const User = require("../models/user");
 const config = require("../config");
 
 const tokenForUser = (user) => {
