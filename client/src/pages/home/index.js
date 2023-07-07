@@ -32,6 +32,15 @@ export const Home = memo((props) => {
     const [size, setSize] = useState(null);
     let buffer = []
     let uploading = false
+
+    const chunkPicker = (fileSize) => {
+        const MB = 1024 * 1024;
+        if (fileSize < MB) return 64 * 1024; // 64KB for files < 1MB
+        if (fileSize < 10 * MB) return 256 * 1024; // 256KB for files < 10MB
+        if (fileSize < 100 * MB) return MB; // 1MB for files < 100MB
+        if (fileSize < 500 * MB) return 4 * MB; // 4MB for files < 500MB
+        return 16 * MB; // 16MB for larger files
+    }
     
     const springProps = useSpring({
         position: 'relative',
@@ -62,7 +71,7 @@ export const Home = memo((props) => {
     
     useEffect(() => {
         instance.listenOnInput(document.getElementById("file_input"));
-        instance.chunkSize = 1024 * 100 // 1024 * 1024 * 64 // 64MB
+        // instance.chunkSize = 1024 * 100 // 1024 * 1024 * 64 // 64MB
         instance.maxFileSize = 1024 * 1024 * 1024 * 2 // 2GB
         instance.addEventListener("progress", p => {
             const percentage = (p.bytesLoaded / p.file.size * 100).toFixed(2)
@@ -85,6 +94,9 @@ export const Home = memo((props) => {
             event.file.meta.channel = channel;
             event.file.meta.type = event.file.type;
             event.file.meta.size = event.file.size;
+            const chunkSize = chunkPicker(event.file.size);
+            instance.chunkSize = chunkSize;
+            console.log("chunkSize:", instance.chunkSize)
         });
 
         instance.addEventListener("error", function(data){
