@@ -52,11 +52,11 @@ function handleSocketConnection(socket) {
 }
 
 function handleUploadError(error) {
-    console.log('Upload error:', error.message);
+    console.log('Upload error:', error);
 }
 
 function handleUploadError(socket, error) {
-    console.log("An error occurred during upload: ", error.message);
+    console.log("An error occurred during upload: ", error);
 }
 
 function handleDisconnectDuringUpload(socket, fileMetadata) {
