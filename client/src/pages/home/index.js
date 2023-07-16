@@ -3,11 +3,11 @@ import { Row, Col, Space, Tooltip, Popconfirm } from 'antd';
 import io from 'socket.io-client';
 import randomstring from 'randomstring';
 import { Button, Input, Card, CardBody, CardHeader } from '../../components';
-import { Text, Heading, Link } from '@pancakeswap/uikit';
+import { Text, Heading, Link, RefreshIcon } from '@pancakeswap/uikit';
 import { ToastContainer } from '@pancakeswap-libs/uikit';
 import { useSpring, animated, config } from 'react-spring';
-import BuyMeACoffee from '../../media/buymeacoffee.png'
-import styled from 'styled-components'
+import BuyMeACoffee from '../../media/buymeacoffee.png';
+import styled from 'styled-components';
 
 var SocketIOFileUpload = require('socketio-file-upload');
 
@@ -30,8 +30,8 @@ export const Home = memo((props) => {
     const [flip, set] = useState(false);
     const [progress, setProgress] = useState(null);
     const [size, setSize] = useState(null);
-    let buffer = []
-    let uploading = false
+    let buffer = [];
+    let uploading = false;
 
     const chunkPicker = (fileSize) => {
         const MB = 1024 * 1024;
@@ -40,8 +40,8 @@ export const Home = memo((props) => {
         if (fileSize < 100 * MB) return MB; // 1MB for files < 100MB
         if (fileSize < 500 * MB) return 4 * MB; // 4MB for files < 500MB
         return 16 * MB; // 16MB for larger files
-    }
-    
+    };
+
     const springProps = useSpring({
         position: 'relative',
         width: '100%',
@@ -52,7 +52,9 @@ export const Home = memo((props) => {
         fontWeight: 'bold',
     });
 
-    const words = ['Bluetooth', 'Infrared', 'Tether', 'Magic'];
+
+    const words = ['Bluetooth', 'Infrared', 'Tether', 'Magic', 'WiFi', '5G', 'Fiber', 'Satellite'];
+
 
     const { scroll } = useSpring({
         scroll: (words.length - 1) * 50,
@@ -67,69 +69,66 @@ export const Home = memo((props) => {
     useEffect(() => {
         generateChannel();
     }, []);
-    
-    
+
     useEffect(() => {
-        instance.listenOnInput(document.getElementById("file_input"));
+        instance.listenOnInput(document.getElementById('file_input'));
         // instance.chunkSize = 1024 * 100 // 1024 * 1024 * 64 // 64MB
-        instance.maxFileSize = 1024 * 1024 * 1024 * 2 // 2GB
-        instance.addEventListener("progress", p => {
-            const percentage = (p.bytesLoaded / p.file.size * 100).toFixed(2)
-            setProgress(percentage)
-            setThrowing(true)
-            setSize({ received: p.bytesLoaded, original: p.file.size })
-        })
-        
-        instance.addEventListener("complete", function(event){
-            uploading = false
-            addToast('Upload File', `Success`, 'success')
-            setProgress(null)
-            setThrowing(false)
+        instance.maxFileSize = 1024 * 1024 * 1024 * 2; // 2GB
+        instance.addEventListener('progress', (p) => {
+            const percentage = ((p.bytesLoaded / p.file.size) * 100).toFixed(2);
+            setProgress(percentage);
+            setThrowing(true);
+            setSize({ received: p.bytesLoaded, original: p.file.size });
+        });
+
+        instance.addEventListener('complete', function (event) {
+            uploading = false;
+            addToast('Upload File', `Success`, 'success');
+            setProgress(null);
+            setThrowing(false);
             fileRef.current.value = null;
         });
-        
-        instance.addEventListener("start", function(event){
+
+        instance.addEventListener('start', function (event) {
             addToast('Please wait!', 'Throwing file....', 'info');
-            uploading = true
+            uploading = true;
             event.file.meta.channel = channel;
             event.file.meta.type = event.file.type;
             event.file.meta.size = event.file.size;
             const chunkSize = chunkPicker(event.file.size);
             instance.chunkSize = chunkSize;
-            console.log("chunkSize:", instance.chunkSize)
+            console.log('chunkSize:', instance.chunkSize);
         });
 
-        instance.addEventListener("error", function(data){
-            uploading = false
+        instance.addEventListener('error', function (data) {
+            uploading = false;
             if (data.code === 1) {
                 addToast('Oops!', 'File size exceed.', 'danger');
-                setProgress(null)
-                setThrowing(false)
+                setProgress(null);
+                setThrowing(false);
                 fileRef.current.value = null;
             }
         });
-        
+
         return () => {
             instance.destroy();
             instance = null;
-        }
+        };
     }, [channel]);
-    
-    
 
     useEffect(() => {
         socket.on('total', setTotal);
     }, [total]);
 
     useEffect(() => {
-        let bytes = 0
+        let bytes = 0;
         socket.on(channel, (data) => {
-            buffer.push(data.file)
-            bytes += data.file.byteLength
-            const percentage = (bytes / data.size * 100).toFixed(2)
-            setProgress(percentage)
-            setThrowing(true)
-            setSize({ received: bytes , original: data.size })
+            buffer.push(data.file);
+            bytes += data.file.byteLength;
+            const percentage = ((bytes / data.size) * 100).toFixed(2);
+            setProgress(percentage);
+            setThrowing(true);
+            setSize({ received: bytes, original: data.size });
         });
 
         socket.on(`done-${channel}`, (data) => {
@@ -141,10 +140,10 @@ export const Home = memo((props) => {
             a.download = data.file_name;
             a.click();
             window.navigator.vibrate(200);
-            buffer = []
-            bytes = 0
-            setProgress(null)
-            setThrowing(false)
+            buffer = [];
+            bytes = 0;
+            setProgress(null);
+            setThrowing(false);
         });
 
         socket.on(`join-${channel}`, (room) => {
@@ -165,11 +164,10 @@ export const Home = memo((props) => {
             const dT = evt.clipboardData || window.clipboardData;
             const file = dT.files[0];
             if (!file) return;
-            console.log(dT.files)
-            if(uploading) return addToast('Oops!', 'Your files are currently uploading.', 'danger');
-            instance.submitFiles(dT.files)
+            console.log(dT.files);
+            if (uploading) return addToast('Oops!', 'Your files are currently uploading.', 'danger');
+            instance.submitFiles(dT.files);
         };
-        
     }, [channel]);
 
     const generateChannel = () => {
@@ -182,18 +180,6 @@ export const Home = memo((props) => {
         );
         socket.removeAllListeners();
     };
-
-    // const throwFile = (file) => {
-        // if (file.size > 73400320) return addToast('Oops!', 'File size must below 70MB.', 'danger');
-        // getBase64(file);
-    // };
-
-    // function getBase64(file) {
-    //     setThrowing(true);
-    //     addToast('Please wait!', 'Throwing file....', 'info');
-    //     socket.emit('throw-file', { file: file, name: file.name, type: file.type, channel });
-    //     fileRef.current.value = null;
-    // }
 
     const handleChange = (event) => {
         setChannel(event.target.value.toUpperCase().slice(0, 6));
@@ -228,11 +214,11 @@ export const Home = memo((props) => {
                     <Card isWarning style={{ marginTop: '100px' }}>
                         <CardHeader>
                             <Heading>
-                                Transfer files realtime across devices! <br />
-                                Wherever you are.
+                                Unleash the Power of Connectivity! <br />
+                                Anytime, Anywhere.
                             </Heading>
                             <Space>
-                                We are not using
+                                Transcending boundaries with
                                 <animated.div style={springProps} scrollTop={scroll}>
                                     {words.map((word, i) => (
                                         <div
@@ -248,63 +234,72 @@ export const Home = memo((props) => {
                         <CardBody>
                             <Space direction='vertical'>
                                 <Space>
-                                    Transfer Channel: <Text>{channel}</Text>
-                                    <Link onClick={generateChannel} small color='secondary'>
-                                        New Channel
-                                    </Link>
+                                    Transfer Via: <Text>{channel}</Text>
                                 </Space>
-                                {/* <Space>
-                                Connected Users: <Text>{channelSize}</Text>
-                            </Space> */}
                                 <Space>
                                     <Input
                                         scale='sm'
                                         onChange={handleChange}
-                                        placeholder='Connect Channel'
+                                        placeholder='Join an Existing Channel'
                                         value={channel}
                                     />
+                                    <Button onClick={generateChannel} scale='sm' variant="success">
+                                        <RefreshIcon />
+                                    </Button>
                                     <Button onClick={handleConnectChannel} scale='sm'>
-                                        CONNECT
+                                        JOIN
                                     </Button>
                                 </Space>
-                                <input
-                                    type='file'
-                                    // onChange={(e) => throwFile(e.target.files[0])}
-                                    ref={fileRef}
-                                    id='file_input'
-                                    hidden
-                                />
+                                <input type='file' ref={fileRef} id='file_input' hidden />
                                 <hr />
-                                {size ? 
-                                <div>{((size?.received || 0) / 1048576).toFixed(2)} / {((size?.original || 0) / 1048576).toFixed(2)} MB</div> : null}
+                                {size ? (
+                                    <div>
+                                        Transferred: {((size?.received || 0) / 1048576).toFixed(2)} / Total Size:{' '}
+                                        {((size?.original || 0) / 1048576).toFixed(2)} MB
+                                    </div>
+                                ) : null}
                                 <Space>
                                     <Popconfirm
-                                        title='Your file will be shared across channel.'
+                                        title='Your file will be shared across the channel.'
                                         onConfirm={() => fileRef.current.click()}
-                                        // onCancel={cancel}
-                                        okText='Agree'
-                                        cancelText='Discard'
+                                        okText='Confirm'
+                                        cancelText='Cancel'
                                     >
                                         <Space direction='vertical'>
                                             <Button variant='danger' isLoading={throwing}>
-                                                {!throwing ? 'THROW A FILE!' : progress ? `${progress}%` : "PLEASE WAIT!"}
+                                                {!throwing
+                                                    ? 'SEND A FILE!'
+                                                    : progress
+                                                    ? `${progress}%`
+                                                    : 'UPLOADING...'}
                                             </Button>
-                                            <Text>Or paste from Clipboard!</Text>
+                                            <Text>Or paste directly from Clipboard!</Text>
                                         </Space>
                                     </Popconfirm>
-                                    <Tooltip title='We are not saving your files into our end, your file is running through socket to the destination devices.'>
+
+                                </Space>
+                                <small style={{ fontSize: '0.5rem' }}>
+                                    <div>Total files shared: {total}</div>
+                                    <p>throwmyfile.com @{new Date().getFullYear()}</p>
+                                    <p>
+                                        <a href='tel:+639304699769' target='_blank' rel='noreferrer'>
+                                            +63 930 4699 769
+                                        </a>
+                                    </p>
+                                    <p>
+                                        <a href='mailto:jammmg26@gmail.com' target='_blank' rel='noreferrer'>
+                                            jammmg26@gmail.com
+                                        </a>
+                                    </p>
+                                    <a href='https://buymeacoffee.com/jamg' target='_blank' rel='noreferrer'>
+                                        <img alt="donate" src={BuyMeACoffee} height={50} style={{ margin: '-10px' }} />
+                                    </a>
+                                </small>
+                                    <Tooltip title='Rest easy! Your files travel securely, moving straight from your device to the recipient. We don’t store any data on our servers.'>
                                         <Link small color='secondary'>
-                                            Where does my file will go?
+                                            Curious about your file's journey?
                                         </Link>
                                     </Tooltip>
-                                </Space>
-                                <small style={{ float: 'right', fontSize: '0.5rem' }}>
-                                    <div>Total throws: {total}</div>
-                                    <p>throwmyfile.com @{new Date().getFullYear()}</p>
-                                    <p><a href="tel:+639304699769" target="_blank" rel="noreferrer">+63 930 4699 769</a></p>
-                                    <p><a href="mailto:jammmg26@gmail.com" target="_blank" rel="noreferrer">jammmg26@gmail.com</a></p>
-                                    <a href="https://buymeacoffee.com/jamg" target="_blank" rel="noreferrer"><img src={BuyMeACoffee} height={50} style={{margin: "-10px"}} /></a>
-                                </small>
                             </Space>
                         </CardBody>
                     </Card>
@@ -314,6 +309,4 @@ export const Home = memo((props) => {
     );
 });
 
-const HomeComponent = styled.div`
-    
-`
+const HomeComponent = styled.div``;
