@@ -286,9 +286,6 @@ export const Home = memo((props) => {
                                             jammmg26@gmail.com
                                         </a>
                                     </p>
-                                    {/* <a href='https://buymeacoffee.com/jamg' target='_blank' rel='noreferrer'>
-                                        <img alt="donate" src={BuyMeACoffee} height={50} style={{ margin: '-10px' }} />
-                                    </a> */}
                                 </small>
                                     <Tooltip title='Rest easy! Your files travel securely, moving straight from your device to the recipient. We don’t store any data on our servers.'>
                                         <Link small color='secondary'>
