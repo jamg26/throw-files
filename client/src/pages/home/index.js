@@ -282,18 +282,13 @@ export const Home = memo((props) => {
                                     <div>Total files shared: {total}</div>
                                     <p>throwmyfile.com @{new Date().getFullYear()}</p>
                                     <p>
-                                        <a href='tel:+639304699769' target='_blank' rel='noreferrer'>
-                                            +63 930 4699 769
-                                        </a>
-                                    </p>
-                                    <p>
                                         <a href='mailto:jammmg26@gmail.com' target='_blank' rel='noreferrer'>
                                             jammmg26@gmail.com
                                         </a>
                                     </p>
-                                    <a href='https://buymeacoffee.com/jamg' target='_blank' rel='noreferrer'>
+                                    {/* <a href='https://buymeacoffee.com/jamg' target='_blank' rel='noreferrer'>
                                         <img alt="donate" src={BuyMeACoffee} height={50} style={{ margin: '-10px' }} />
-                                    </a>
+                                    </a> */}
                                 </small>
                                     <Tooltip title='Rest easy! Your files travel securely, moving straight from your device to the recipient. We don’t store any data on our servers.'>
                                         <Link small color='secondary'>
