@@ -12,7 +12,7 @@ const app = express();
 const port = process.env.PORT || 5000;
 const server = http.createServer(app);
 const io = new Server(server, getServerOptions());
-const backend = process.env.BACKEND_JAMG || 'https://localhost:3000';
+const backend = process.env.BACKEND_JAMG || 'http://localhost:3000';
 
 require('./models/user');
 require('./models/throw');

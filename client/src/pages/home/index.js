@@ -3,10 +3,9 @@ import { Row, Col, Space, Tooltip, Popconfirm } from 'antd';
 import io from 'socket.io-client';
 import randomstring from 'randomstring';
 import { Button, Input, Card, CardBody, CardHeader } from '../../components';
-import { Text, Heading, Link, RefreshIcon } from '@pancakeswap/uikit';
+import { Text, Heading, Link, RefreshIcon, CopyIcon, ShareIcon } from '@pancakeswap/uikit';
 import { ToastContainer } from '@pancakeswap-libs/uikit';
 import { useSpring, animated, config } from 'react-spring';
-import BuyMeACoffee from '../../media/buymeacoffee.png';
 import styled from 'styled-components';
 
 var SocketIOFileUpload = require('socketio-file-upload');
@@ -68,6 +67,10 @@ export const Home = memo((props) => {
 
     useEffect(() => {
         generateChannel();
+        // get query "channel" and set to state if exists
+        const urlParams = new URLSearchParams(window.location.search);
+        const channel = urlParams.get('channel');
+        if (channel) setChannel(channel);
     }, []);
 
     useEffect(() => {
@@ -206,6 +209,27 @@ export const Home = memo((props) => {
         setToasts((prevToasts) => prevToasts.filter((prevToast) => prevToast.id !== id));
     };
 
+    const copyToClipboard = () => {
+        navigator.clipboard.writeText(channel);
+        addToast('Copied!', 'Channel copied to clipboard.', 'success');
+    };
+
+    const shareChannel = () => {
+        const url = `${process.env.REACT_APP_FRONTEND_URL}/?channel=${channel}`;
+        if (navigator.share) {
+            navigator
+                .share({
+                    title: 'Throw My File',
+                    text: 'Share your files with anyone, anywhere.',
+                    url: url,
+                })
+                .then(() => console.log('Successful share'))
+                .catch((error) => console.log('Error sharing', error));
+        } else {
+            addToast('Oops!', 'Your browser does not support Web Share API.', 'danger');
+        }
+    };
+
     return (
         <HomeComponent>
             <Row justify='center' style={{ margin: '20px' }}>
@@ -233,8 +257,10 @@ export const Home = memo((props) => {
                         </CardHeader>
                         <CardBody>
                             <Space direction='vertical'>
-                                <Space>
-                                    Transfer Via: <Text>{channel}</Text>
+                                <Space style={{ display: 'flex', alignItems: 'flex-start' }}>
+                                    Transfer Via: <Text style={{ display: 'flex', flexDirection: 'row', gap: 2 }}>{channel} 
+                                    <div title='Copy to clipboard'><CopyIcon width={20} onClick={copyToClipboard} color='secondary' /></div>
+                                    <div title='Share link'><ShareIcon style={{ marginBottom: 5 }} width={20} onClick={shareChannel} color="warning" /></div></Text>
                                 </Space>
                                 <Space>
                                     <Input
