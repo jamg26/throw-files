@@ -306,7 +306,8 @@ export const Home = memo((props) => {
                                 </Space>
                                 <small style={{ fontSize: '0.5rem' }}>
                                     <div>Total files shared: {total}</div>
-                                    <p>throwmyfile.com @{new Date().getFullYear()}</p>
+                                    <p style={{ marginBottom: 0 }}>throwmyfile.com @{new Date().getFullYear()}</p>
+                                    <a href="/privacy-policy">privacy policy</a>
                                     <p>
                                         <a href='mailto:jammmg26@gmail.com' target='_blank' rel='noreferrer'>
                                             jammmg26@gmail.com
