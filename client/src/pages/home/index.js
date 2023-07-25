@@ -7,6 +7,7 @@ import { Text, Heading, Link, RefreshIcon, CopyIcon, ShareIcon } from '@pancakes
 import { ToastContainer } from '@pancakeswap-libs/uikit';
 import { useSpring, animated, config } from 'react-spring';
 import styled from 'styled-components';
+import { Adsense } from '@ctrl/react-adsense';
 
 var SocketIOFileUpload = require('socketio-file-upload');
 
@@ -322,9 +323,25 @@ export const Home = memo((props) => {
                             </Space>
                         </CardBody>
                     </Card>
+                    <div style={{ display: 'flex', marginTop: 300 }}>
+                {/* <div style={{ width: 300, height: 50, background: '#000',  }}></div> */}
+                        <Adsense
+                        client="ca-pub-5395653291137240"
+                        slot="6486000497"
+                        style={{ width: 300, height: 50, display: 'inline-block' }}
+                        format=""
+                        />
+                    </div>
                 </Col>
             </Row>
+            <Adsense
+                client="ca-pub-5395653291137240"
+                slot="6486000497"
+                style={{ width: 300, height: 50 }}
+                format=""
+                />
         </HomeComponent>
+
     );
 });
 
