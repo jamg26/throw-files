@@ -114,6 +114,8 @@ export const Home = memo((props) => {
             }
         });
 
+        handleConnectChannel();
+
         return () => {
             instance.destroy();
             instance = null;
@@ -162,6 +164,10 @@ export const Home = memo((props) => {
 
         socket.on(`channel-join-${channel}`, (data) => {
             addToast('Great!', data, 'success');
+        });
+
+        socket.on(`connections-${channel}`, (data) => {
+            console.log(data)
         });
 
         document.onpaste = (evt) => {

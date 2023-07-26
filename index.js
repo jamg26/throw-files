@@ -47,6 +47,7 @@ function handleSocketConnection(socket) {
     socket.on('siofu_error', error => handleUploadError(socket, error));
     socket.on('disconnect', () => handleDisconnectDuringUpload(socket, fileMetadata));
     socket.on('channel-join', handleChannelJoin);
+    socket.on('disconnecting', () => handleDisconnecting(socket, fileMetadata));
 
     emitTotalThrows();
 }
@@ -57,6 +58,10 @@ function handleUploadError(error) {
 
 function handleUploadError(socket, error) {
     console.log("An error occurred during upload: ", error);
+}
+
+function handleDisconnecting(socket, fileMetadata) {
+    console.log(`Socket ${socket.id} disconnected.`);
 }
 
 function handleDisconnectDuringUpload(socket, fileMetadata) {
