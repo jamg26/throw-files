@@ -75,6 +75,9 @@ export const Home = memo((props) => {
     }, []);
 
     useEffect(() => {
+        if(channel) {
+            
+        }
         instance.listenOnInput(document.getElementById('file_input'));
         // instance.chunkSize = 1024 * 100 // 1024 * 1024 * 64 // 64MB
         instance.maxFileSize = 1024 * 1024 * 1024 * 2; // 2GB
@@ -114,7 +117,9 @@ export const Home = memo((props) => {
             }
         });
 
-        handleConnectChannel();
+        if(channel) {
+            handleConnectChannel();
+        }
 
         return () => {
             instance.destroy();
