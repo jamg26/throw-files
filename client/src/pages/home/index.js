@@ -30,6 +30,9 @@ export const Home = memo((props) => {
     const [flip, set] = useState(false);
     const [progress, setProgress] = useState(null);
     const [size, setSize] = useState(null);
+
+    const [sizeLimit, setSizeLimit] = useState("2gb");
+
     let buffer = [];
     let uploading = false;
 
@@ -79,8 +82,7 @@ export const Home = memo((props) => {
             
         }
         instance.listenOnInput(document.getElementById('file_input'));
-        // instance.chunkSize = 1024 * 100 // 1024 * 1024 * 64 // 64MB
-        instance.maxFileSize = 1024 * 1024 * 1024 * 2; // 2GB
+        instance.maxFileSize = calculateSize(sizeLimit);
         instance.addEventListener('progress', (p) => {
             const percentage = ((p.bytesLoaded / p.file.size) * 100).toFixed(2);
             setProgress(percentage);
@@ -185,6 +187,24 @@ export const Home = memo((props) => {
         };
     }, [channel]);
 
+    function calculateSize(fileSize) {
+        let size = parseFloat(fileSize);
+        let unit = fileSize.replace(size, '').trim().toLowerCase();
+    
+        switch(unit) {
+            case 'gb':
+                return size * 1024 * 1024 * 1024;
+            case 'mb':
+                return size * 1024 * 1024;
+            case 'kb':
+                return size * 1024;
+            case 'b':
+                return size;
+            default:
+                return 'Invalid unit. Please use GB, MB, KB, or B.';
+        }
+    }
+
     const generateChannel = () => {
         setChannel(
             randomstring.generate({
@@ -273,6 +293,9 @@ export const Home = memo((props) => {
                                     Transfer Via: <Text style={{ display: 'flex', flexDirection: 'row', gap: 2 }}>{channel} 
                                     <div title='Copy to clipboard'><CopyIcon width={20} onClick={copyToClipboard} color='secondary' /></div>
                                     <div title='Share link'><ShareIcon style={{ marginBottom: 5 }} width={20} onClick={shareChannel} color="warning" /></div></Text>
+                                </Space>
+                                <Space style={{ display: 'flex', alignItems: 'flex-start' }}>
+                                    Max Limit: {sizeLimit}
                                 </Space>
                                 <Space>
                                     <Input
