@@ -30,7 +30,7 @@ export const Home = memo((props) => {
     const [progress, setProgress] = useState(null);
     const [size, setSize] = useState(null);
 
-    const [sizeLimit, setSizeLimit] = useState("2gb");
+    const [sizeLimit, setSizeLimit] = useState("100MB");
 
     let buffer = [];
     let uploading = false;
