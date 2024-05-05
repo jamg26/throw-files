@@ -2,8 +2,10 @@
   "name": "client",
   "version": "0.1.0",
   "private": true,
-  "dependencies": {
+  "devDependencies": {
     "@craco/craco": "^6.4.3",
+  },
+  "dependencies": {
     "@ctrl/react-adsense": "^1.7.0",
     "@pancakeswap-libs/uikit": "^0.29.4",
     "@pancakeswap/uikit": "^0.64.0",
