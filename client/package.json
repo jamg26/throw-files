@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "devDependencies": {
-    "@craco/craco": "^6.4.3",
+    "@craco/craco": "^6.4.3"
   },
   "dependencies": {
     "@ctrl/react-adsense": "^1.7.0",
