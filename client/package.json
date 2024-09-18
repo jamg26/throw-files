@@ -3,7 +3,8 @@
 	"version": "0.1.0",
 	"private": true,
 	"devDependencies": {
-		"@craco/craco": "^6.4.3"
+		"@craco/craco": "^6.4.3",
+		"env-cmd": "^10.1.0"
 	},
 	"dependencies": {
 		"@ctrl/react-adsense": "^1.7.0",
@@ -33,7 +34,7 @@
 		"styled-components": "^5.3.5"
 	},
 	"scripts": {
-		"start": "craco start",
+		"start": "env-cmd -f .env.dev craco start",
 		"build": "craco build",
 		"test": "craco test",
 		"eject": "react-scripts eject"

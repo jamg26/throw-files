@@ -5,9 +5,9 @@
 	"main": "index.js",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
-		"dev": "concurrently \"npm run server\" \"npm run client\"",
-		"server": "nodemon index.js",
-		"client": "cd client && npm start",
+		"dev": "env-cmd -f .env.dev concurrently \"npm run server\" \"npm run client\"",
+		"server": "env-cmd -f .env.dev nodemon index.js",
+		"client": "npm start --prefix client",
 		"build": "set NPM_CONFIG_PRODUCTION=false && npm install @craco/craco@6.4.3 --save && npm install --prefix client --legacy-peer-deps && npm run build --prefix client",
 		"heroku-postbuild": "npm run build",
 		"start": "node index.js"
@@ -35,6 +35,7 @@
 	},
 	"devDependencies": {
 		"concurrently": "^6.5.1",
+		"env-cmd": "^10.1.0",
 		"nodemon": "^2.0.15"
 	}
 }

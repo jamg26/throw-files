@@ -6,13 +6,14 @@ const mongoose = require('mongoose');
 const siofu = require('socketio-file-upload');
 const { Server } = require('socket.io');
 const { join, resolve } = require('path');
+const fs = require('fs');
 const router = require('./router');
 
 const app = express();
 const port = process.env.PORT || 5000;
 const server = http.createServer(app);
 const io = new Server(server, getServerOptions());
-const backend = process.env.BACKEND_JAMG || 'http://localhost:3000';
+const backend = process.env.FE_URL || 'http://localhost:3000';
 
 require('./models/user');
 require('./models/throw');
@@ -39,11 +40,22 @@ function handleSocketConnection(socket) {
 	const fileUploadInstance = new siofu();
 	let fileMetadata = {};
 
+	// Specify the directory to save uploaded files
+	fileUploadInstance.dir = join(__dirname, 'uploads');
+
+	// Ensure the upload directory exists
+	if (!fs.existsSync(fileUploadInstance.dir)) {
+		fs.mkdirSync(fileUploadInstance.dir, { recursive: true });
+	}
+
 	fileUploadInstance.listen(socket);
 	fileUploadInstance.on('error', handleUploadError);
+
+	// Handle the 'saved' event to capture file information
+	fileUploadInstance.on('saved', (event) => handleUploadDone(socket, fileMetadata, event));
+
 	socket.on('siofu_start', (data) => handleUploadStart(socket, data, fileMetadata));
 	socket.on('siofu_progress', (data) => handleUploadProgress(socket, data, fileMetadata));
-	socket.on('siofu_done', () => handleUploadDone(socket, fileMetadata));
 	socket.on('siofu_error', (error) => handleUploadError(socket, error));
 	socket.on('disconnect', () => handleDisconnectDuringUpload(socket, fileMetadata));
 	socket.on('channel-join', handleChannelJoin);
@@ -85,9 +97,22 @@ function handleUploadProgress(socket, data, fileMetadata) {
 	});
 }
 
-async function handleUploadDone(socket, fileMetadata) {
+async function handleUploadDone(socket, fileMetadata, event) {
+	// Get the uploaded file name from the 'saved' event
+	const filePath = event.file.pathName;
+
 	socket.broadcast.emit(`done-${fileMetadata.channel}`, { type: fileMetadata.type, file_name: fileMetadata.name });
 	await new Throws({ handshake: socket.handshake }).save();
+
+	// Remove the file after it is fully uploaded and processed
+	fs.unlink(filePath, (err) => {
+		if (err) {
+			console.error(`Error deleting file ${filePath}:`, err);
+		} else {
+			console.log(`File ${filePath} deleted successfully.`);
+		}
+	});
+
 	emitTotalThrows();
 }
 
