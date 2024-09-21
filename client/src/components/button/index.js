@@ -6,4 +6,8 @@ export const Button = (props) => {
     return <ButtonContainer {...props}>{props.children}</ButtonContainer>;
 };
 
-const ButtonContainer = styled(PCakeButton)``;
+const ButtonContainer = styled(PCakeButton)`
+    :hover {
+        scale: max(95%);
+    }
+`;

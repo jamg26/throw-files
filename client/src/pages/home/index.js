@@ -160,15 +160,18 @@ export const Home = memo((props) => {
 		socket.on(`join-${channel}`, (room) => {
 			window.navigator.vibrate(200);
 			addToast('Great!', 'A user connected with the channel.', 'info');
+			// TODO: Play Notification Sound
 		});
 
 		socket.on(`receiving-${channel}`, (data) => {
 			window.navigator.vibrate(200);
 			addToast('Please Wait', 'Receiving file...', 'info');
+			// TODO: Play Notification Sound
 		});
 
 		socket.on(`channel-join-${channel}`, (data) => {
 			addToast('Great!', data, 'success');
+			// TODO: Play Notification Sound
 		});
 
 		socket.on(`connections-${channel}`, (data) => {
@@ -240,12 +243,16 @@ export const Home = memo((props) => {
 	};
 
 	const copyToClipboard = () => {
-		navigator.clipboard.writeText(channel);
-		addToast('Copied!', 'Channel copied to clipboard.', 'success');
+		navigator.clipboard.writeText(channel).then(r => {
+			addToast('Copied!', 'Channel copied to clipboard.', 'success');
+		});
 	};
 
 	const shareChannel = () => {
 		const url = `${process.env.REACT_APP_FRONTEND_URL}/?channel=${channel}`;
+		navigator.clipboard.writeText(url).then(r => {
+			addToast('Copied!', 'Channel URL copied to clipboard.', 'success');
+		});
 		if (navigator.share) {
 			navigator
 				.share({
@@ -285,9 +292,8 @@ export const Home = memo((props) => {
 						<CardBody>
 							<Space direction='vertical'>
 								<Space style={{ display: 'flex', alignItems: 'flex-start' }}>
-									Transfer Via:{' '}
 									<Text style={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
-										{channel}
+										Channel: {channel}
 										<div title='Copy to clipboard'>
 											<CopyIcon width={20} onClick={copyToClipboard} color='secondary' />
 										</div>

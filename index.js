@@ -123,7 +123,12 @@ function handleChannelJoin(channel) {
 }
 
 async function emitTotalThrows() {
-	const totalThrows = await Throws.countDocuments();
+	let totalThrows = 0;
+	try {
+		totalThrows = await Throws.countDocuments();
+	} catch(e) {
+
+	}
 	io.sockets.emit('total', totalThrows);
 }
 
