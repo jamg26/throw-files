@@ -327,16 +327,23 @@ export const Home = memo((props) => {
 										okText='Confirm'
 										cancelText='Cancel'
 									>
+										{throwing &&
+										<div className="dots">
+											<div></div>
+											<div></div>
+											<div></div>
+										</div>}
+										{!throwing &&
 										<Space direction='vertical'>
 											<Button variant='danger' isLoading={throwing}>
 												{!throwing ? 'SEND A FILE!' : progress ? `${progress}%` : 'UPLOADING...'}
 											</Button>
 											<Text>Or paste directly from Clipboard!</Text>
-										</Space>
+										</Space>}
 									</Popconfirm>
 								</Space>
-								<small style={{ fontSize: '0.5rem' }}>
-									<div>Total files shared: {total}</div>
+								<small style={{fontSize: '0.5rem'}}>
+								<div>Total files shared: {total}</div>
 									<p style={{ marginBottom: 0 }}>throwmyfile.com @{new Date().getFullYear()}</p>
 									<a href='/privacy-policy'>privacy policy</a>
 									<p>
