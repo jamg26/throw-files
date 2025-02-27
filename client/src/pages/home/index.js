@@ -780,7 +780,7 @@ export const Home = memo((props) => {
                     JOIN
                   </Button>
                 </Space>
-                <Space
+                {/* <Space
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
@@ -792,7 +792,7 @@ export const Home = memo((props) => {
                     checked={compressFiles}
                     onChange={handleCompressToggle}
                   />
-                </Space>
+                </Space> */}
                 <input
                   type="file"
                   ref={fileRef}
