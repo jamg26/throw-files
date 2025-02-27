@@ -27,8 +27,7 @@
     "socket.io-client": "^4.7.5",
     "socket.io-stream": "^0.9.1",
     "socketio-file-upload": "^0.7.3",
-    "styled-components": "^5.3.5",
-    "@rsbuild/plugin-react": "^0.5.0"
+    "styled-components": "^5.3.5"
   },
   "devDependencies": {
     "@rsbuild/core": "^0.5.0",
