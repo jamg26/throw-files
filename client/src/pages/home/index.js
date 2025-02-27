@@ -30,17 +30,35 @@ import { ThemeContext } from "../../index";
 
 var SocketIOFileUpload = require("socketio-file-upload");
 
-const socket = io(
-  process.env.REACT_APP_BACKEND_URL || "http://localhost:5000",
-  {
-    transports: ["websocket"],
-    jsonp: false,
-    forceNew: true,
-    extraHeaders: {
-      "Bypass-Tunnel-Reminder": "true",
-    },
-  }
-);
+// Get backend URL from environment variables
+const BACKEND_URL =
+  // Try to access environment variables in different formats for compatibility
+  (typeof process !== "undefined" &&
+    process.env &&
+    process.env.REACT_APP_BACKEND_URL) ||
+  (typeof window !== "undefined" &&
+    window.ENV &&
+    window.ENV.REACT_APP_BACKEND_URL) ||
+  "http://localhost:5000";
+
+// Get frontend URL from environment variables
+const FRONTEND_URL =
+  (typeof process !== "undefined" &&
+    process.env &&
+    process.env.REACT_APP_FRONTEND_URL) ||
+  (typeof window !== "undefined" &&
+    window.ENV &&
+    window.ENV.REACT_APP_FRONTEND_URL) ||
+  "http://localhost:3000";
+
+const socket = io(BACKEND_URL, {
+  transports: ["websocket"],
+  jsonp: false,
+  forceNew: true,
+  extraHeaders: {
+    "Bypass-Tunnel-Reminder": "true",
+  },
+});
 
 // Feature announcement popup
 const FeaturePopup = ({ visible, onClose }) => {
@@ -540,7 +558,7 @@ export const Home = memo((props) => {
   };
 
   const shareChannel = () => {
-    const url = `${process.env.REACT_APP_FRONTEND_URL}/?channel=${channel}`;
+    const url = `${FRONTEND_URL}/?channel=${channel}`;
     navigator.clipboard.writeText(url).then((r) => {
       addToast("Copied!", "Channel URL copied to clipboard.", "success");
     });
@@ -762,6 +780,7 @@ export const Home = memo((props) => {
                 <Space style={{ display: "flex", alignItems: "flex-start" }}>
                   Max Limit: {sizeLimit}
                 </Space>
+
                 <Space>
                   <Input
                     scale="sm"
@@ -780,19 +799,6 @@ export const Home = memo((props) => {
                     JOIN
                   </Button>
                 </Space>
-                {/* <Space
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    width: "100%",
-                  }}
-                >
-                  <Text>Compress multiple files:</Text>
-                  <Switch
-                    checked={compressFiles}
-                    onChange={handleCompressToggle}
-                  />
-                </Space> */}
                 <input
                   type="file"
                   ref={fileRef}
@@ -850,20 +856,11 @@ export const Home = memo((props) => {
                     Curious about your file's journey?
                   </Link>
                 </Tooltip>
-              </Space>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "flex-end",
-                  justifyContent: "space-between",
-                  width: "100%",
-                }}
-              >
+
                 <div
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    width: "100%",
                     justifyContent: "flex-end",
                   }}
                 >
@@ -881,7 +878,7 @@ export const Home = memo((props) => {
                     color={isDarkMode ? "secondary" : "textDisabled"}
                   />
                 </div>
-              </div>
+              </Space>
             </CardBody>
           </Card>
           <div style={{ display: "flex", marginTop: 300 }}>

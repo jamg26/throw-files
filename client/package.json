@@ -1,59 +1,59 @@
 {
-	"name": "client",
-	"version": "0.1.0",
-	"private": true,
-	"devDependencies": {
-		"@craco/craco": "^6.4.3",
-		"env-cmd": "^10.1.0"
-	},
-	"dependencies": {
-		"@ctrl/react-adsense": "^1.7.0",
-		"@pancakeswap-libs/uikit": "^0.29.4",
-		"@pancakeswap/uikit": "^0.64.0",
-		"@testing-library/jest-dom": "^5.16.4",
-		"@testing-library/react": "^12.1.4",
-		"@testing-library/user-event": "^7.2.1",
-		"antd": "^4.19.5",
-		"axios": "^0.22.0",
-		"craco-less": "^1.17.1",
-		"http-proxy-middleware": "^0.21.0",
-		"jszip": "^3.10.1",
-		"multer": "^1.4.5-lts.1",
-		"randomstring": "^1.2.2",
-		"react": "^18.0.0",
-		"react-dom": "^18.0.0",
-		"react-redux": "^7.2.8",
-		"react-router-dom": "^5.3.0",
-		"react-scripts": "^4.0.3",
-		"react-spring": "^9.4.5-beta.0",
-		"redux": "^4.1.2",
-		"redux-devtools-extension": "^2.13.9",
-		"redux-thunk": "^2.4.1",
-		"server": "file:..",
-		"socket.io-client": "^4.7.5",
-		"socket.io-stream": "^0.9.1",
-		"socketio-file-upload": "^0.7.3",
-		"styled-components": "^5.3.5"
-	},
-	"scripts": {
-		"start": "env-cmd -f .env.dev craco start",
-		"build": "craco build",
-		"test": "craco test",
-		"eject": "react-scripts eject"
-	},
-	"eslintConfig": {
-		"extends": "react-app"
-	},
-	"browserslist": {
-		"production": [
-			">0.2%",
-			"not dead",
-			"not op_mini all"
-		],
-		"development": [
-			"last 1 chrome version",
-			"last 1 firefox version",
-			"last 1 safari version"
-		]
-	}
+  "name": "throw-files-client",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@ctrl/react-adsense": "^1.7.0",
+    "@pancakeswap-libs/uikit": "^0.29.4",
+    "@pancakeswap/uikit": "^0.64.0",
+    "@testing-library/jest-dom": "^5.16.4",
+    "@testing-library/react": "^12.1.4",
+    "@testing-library/user-event": "^7.2.1",
+    "antd": "^4.19.5",
+    "axios": "^0.22.0",
+    "jszip": "^3.10.1",
+    "less": "^4.2.0",
+    "multer": "^1.4.5-lts.1",
+    "randomstring": "^1.2.2",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-redux": "^7.2.8",
+    "react-router-dom": "^5.3.0",
+    "react-spring": "^9.4.5-beta.0",
+    "redux": "^4.1.2",
+    "redux-devtools-extension": "^2.13.9",
+    "redux-thunk": "^2.4.1",
+    "server": "file:..",
+    "socket.io-client": "^4.7.5",
+    "socket.io-stream": "^0.9.1",
+    "socketio-file-upload": "^0.7.3",
+    "styled-components": "^5.3.5"
+  },
+  "devDependencies": {
+    "@rsbuild/core": "^0.5.0",
+    "@rsbuild/plugin-less": "^0.5.0",
+    "@rsbuild/plugin-react": "^0.5.0",
+    "@rsbuild/plugin-node-polyfill": "^0.5.0",
+    "@types/node": "^20.11.17",
+    "cross-env": "^7.0.3",
+    "http-proxy-middleware": "^2.0.6",
+    "env-cmd": "^10.1.0"
+  },
+  "scripts": {
+    "dev": "cross-env NODE_ENV=development rsbuild dev",
+    "build": "rsbuild build",
+    "preview": "rsbuild preview"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
 }
