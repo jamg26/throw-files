@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState, useContext } from "react";
 import {
   Row,
   Col,
@@ -19,11 +19,14 @@ import {
   RefreshIcon,
   CopyIcon,
   ShareIcon,
+  MoonIcon,
+  SunIcon,
 } from "@pancakeswap/uikit";
 import { ToastContainer } from "@pancakeswap-libs/uikit";
 import { useSpring, animated, config } from "react-spring";
 import styled from "styled-components";
 import JSZip from "jszip";
+import { ThemeContext } from "../../index";
 
 var SocketIOFileUpload = require("socketio-file-upload");
 
@@ -103,7 +106,8 @@ const FeaturePopup = ({ visible, onClose }) => {
             color="#7A6EAA"
             style={{ display: "block", marginBottom: "24px" }}
           >
-            We've upgraded! Now you can select multiple files at once for more efficient transfers.
+            We've upgraded! Now you can select multiple files at once for more
+            efficient transfers.
           </Text>
 
           <div
@@ -139,6 +143,7 @@ export const Home = memo((props) => {
   const [filesBeingTransferred, setFilesBeingTransferred] = useState([]);
   const [compressFiles, setCompressFiles] = useState(true);
   const [showFeaturePopup, setShowFeaturePopup] = useState(false);
+  const { isDarkMode, toggleTheme } = useContext(ThemeContext);
 
   const [sizeLimit, setSizeLimit] = useState("5GB");
 
@@ -631,7 +636,9 @@ export const Home = memo((props) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    handleFiles(files);
+    // Convert FileList to Array before passing to handleFiles
+    const filesArray = Array.from(files);
+    handleFiles(filesArray);
   };
 
   const renderFileTransferList = () => {
@@ -773,7 +780,7 @@ export const Home = memo((props) => {
                     JOIN
                   </Button>
                 </Space>
-                {/* <Space
+                <Space
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
@@ -785,7 +792,7 @@ export const Home = memo((props) => {
                     checked={compressFiles}
                     onChange={handleCompressToggle}
                   />
-                </Space> */}
+                </Space>
                 <input
                   type="file"
                   ref={fileRef}
@@ -844,6 +851,37 @@ export const Home = memo((props) => {
                   </Link>
                 </Tooltip>
               </Space>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-end",
+                  justifyContent: "space-between",
+                  width: "100%",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    width: "100%",
+                    justifyContent: "flex-end",
+                  }}
+                >
+                  <SunIcon
+                    width={16}
+                    color={isDarkMode ? "textDisabled" : "warning"}
+                  />
+                  <Switch
+                    checked={isDarkMode}
+                    onChange={toggleTheme}
+                    style={{ margin: "0 8px" }}
+                  />
+                  <MoonIcon
+                    width={16}
+                    color={isDarkMode ? "secondary" : "textDisabled"}
+                  />
+                </div>
+              </div>
             </CardBody>
           </Card>
           <div style={{ display: "flex", marginTop: 300 }}>
