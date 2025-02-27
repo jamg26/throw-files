@@ -8,12 +8,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-/*! react */
-
-/*! ./cjs/react-dom.production.min.js */
-
-/*! ./cjs/scheduler.production.min.js */
-
 /**
  * @license React
  * react-jsx-runtime.production.min.js
@@ -23,8 +17,6 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
-
-/*! ./cjs/react-jsx-runtime.production.min.js */
 
 /**
  * @license React
@@ -36,10 +28,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-/*! scheduler */
-
-/*! react-dom */
-
 /**
  * @license React
  * scheduler.production.min.js
@@ -49,7 +37,3 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
-
-/*! ./cjs/react.production.min.js */
-
-/*! react */

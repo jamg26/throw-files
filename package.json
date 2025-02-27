@@ -37,7 +37,6 @@
   "devDependencies": {
     "concurrently": "^6.5.1",
     "env-cmd": "^10.1.0",
-    "nodemon": "^2.0.15",
-    "@rsbuild/plugin-react": "^0.5.0"
+    "nodemon": "^2.0.15"
   }
 }
