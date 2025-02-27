@@ -9,7 +9,7 @@
     "server": "env-cmd -f .env.dev nodemon index.js",
     "client": "npm run dev --prefix client",
     "client-back": "npm start --prefix client",
-    "build": "set NPM_CONFIG_PRODUCTION=false && npm install @rsbuild/core@0.5.0 --save && yarn install --prefix client && npm run build --prefix client",
+    "build": "set NPM_CONFIG_PRODUCTION=false && npm install --prefix client && npm run build --prefix client",
     "heroku-postbuild": "npm run build",
     "start": "node index.js"
   },
