@@ -28,12 +28,12 @@
     "socket.io-stream": "^0.9.1",
     "socketio-file-upload": "^0.7.3",
     "styled-components": "^5.3.5",
-    "@rsbuild/core": "^1.2.12"
-  },
-  "devDependencies": {
+    "@rsbuild/core": "^1.2.12",
     "@rsbuild/plugin-less": "^1.1.1",
     "@rsbuild/plugin-node-polyfill": "^1.3.0",
-    "@rsbuild/plugin-react": "^1.1.1",
+    "@rsbuild/plugin-react": "^1.1.1"
+  },
+  "devDependencies": {
     "@types/node": "^20.11.17",
     "cross-env": "^7.0.3",
     "env-cmd": "^10.1.0",
