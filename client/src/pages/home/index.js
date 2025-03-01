@@ -703,14 +703,14 @@ export const Home = memo((props) => {
                         fontSize: "0.8em",
                       }}
                     >
-                      <span>{progress[file.id]}%</span>
+                      <Text>{progress[file.id]}%</Text>
                       {size[file.id] && (
-                        <span>
+                        <Text>
                           {((size[file.id].received || 0) / 1048576).toFixed(2)}{" "}
                           /{" "}
                           {((size[file.id].original || 0) / 1048576).toFixed(2)}{" "}
                           MB
-                        </span>
+                        </Text>
                       )}
                     </div>
                   </div>
@@ -835,6 +835,29 @@ export const Home = memo((props) => {
                     )}
                   </Popconfirm>
                 </Space>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "flex-start",
+                  }}
+                >
+                  <Text style={{ fontSize: 8, marginRight: 5 }}>Theme:</Text>
+                  <SunIcon
+                    width={15}
+                    color={isDarkMode ? "textDisabled" : "warning"}
+                  />
+                  <Switch
+                    checked={isDarkMode}
+                    onChange={toggleTheme}
+                    style={{ margin: "0 5px" }}
+                    size="small"
+                  />
+                  <MoonIcon
+                    width={15}
+                    color={isDarkMode ? "secondary" : "textDisabled"}
+                  />
+                </div>
                 <small style={{ fontSize: "0.5rem" }}>
                   <div>Total files shared: {total}</div>
                   <p style={{ marginBottom: 0 }}>
@@ -856,28 +879,6 @@ export const Home = memo((props) => {
                     Curious about your file's journey?
                   </Link>
                 </Tooltip>
-
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "flex-end",
-                  }}
-                >
-                  <SunIcon
-                    width={16}
-                    color={isDarkMode ? "textDisabled" : "warning"}
-                  />
-                  <Switch
-                    checked={isDarkMode}
-                    onChange={toggleTheme}
-                    style={{ margin: "0 8px" }}
-                  />
-                  <MoonIcon
-                    width={16}
-                    color={isDarkMode ? "secondary" : "textDisabled"}
-                  />
-                </div>
               </Space>
             </CardBody>
           </Card>
