@@ -151,6 +151,7 @@ const FeaturePopup = ({ visible, onClose }) => {
 export const Home = memo((props) => {
   var instance = new SocketIOFileUpload(socket);
   const [channel, setChannel] = useState("");
+  const [currentChannel, setCurrentChannel] = useState(null);
   const [total, setTotal] = useState(0);
   const [connectedUsers, setConnectedUsers] = useState(0);
   const [throwing, setThrowing] = useState(false);
@@ -228,7 +229,10 @@ export const Home = memo((props) => {
     // get query "channel" and set to state if exists
     const urlParams = new URLSearchParams(window.location.search);
     const channel = urlParams.get("channel");
-    if (channel) setChannel(channel);
+    if (channel) {
+      setChannel(channel);
+      setCurrentChannel(channel);
+    }
   }, []);
 
   useEffect(() => {
@@ -515,23 +519,39 @@ export const Home = memo((props) => {
   }
 
   const generateChannel = () => {
-    setChannel(
-      randomstring.generate({
-        length: 6,
-        charset: "alphanumeric",
-        capitalization: "uppercase",
-      })
-    );
-    socket.removeAllListeners();
+    // Store the previous channel before generating a new one
+    const previousChannel = currentChannel;
+    const newChannel = randomstring.generate({
+      length: 6,
+      charset: "alphanumeric",
+      capitalization: "uppercase",
+    });
+
+    setChannel(newChannel);
   };
 
   const handleChange = (event) => {
-    setChannel(event.target.value.toUpperCase().slice(0, 6));
+    const newChannel = event.target.value.toUpperCase().slice(0, 6);
+    setChannel(newChannel);
   };
 
   const handleConnectChannel = () => {
     if (!channel) return addToast("Oops!", "Empty channel.", "danger");
-    socket.emit("channel-join", channel);
+
+    // Check if we're already connected to a channel
+    if (currentChannel && currentChannel !== channel) {
+      // If changing to a different channel, send both previous and new channel
+      socket.emit("channel-change", {
+        previousChannel: currentChannel,
+        newChannel: channel,
+      });
+    } else {
+      // First time joining a channel
+      socket.emit("channel-join", channel);
+    }
+
+    // Update local tracking of current channel
+    setCurrentChannel(channel);
   };
 
   const addToast = (title, description, variant) => {

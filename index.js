@@ -113,6 +113,28 @@ function handleSocketConnection(socket) {
     currentChannel = channel;
     handleChannelJoin.call(socket, channel);
   });
+  
+  socket.on("channel-change", ({ previousChannel, newChannel }) => {
+    // Handle the case when a user changes channels
+    if (previousChannel && channelUsers.has(previousChannel)) {
+      // Decrease the count in the previous channel
+      channelUsers.set(previousChannel, channelUsers.get(previousChannel) - 1);
+      
+      // If count reaches 0, remove the channel entry
+      if (channelUsers.get(previousChannel) <= 0) {
+        channelUsers.delete(previousChannel);
+      } else {
+        // Emit updated user count to remaining users in the previous channel
+        io.emit(`connections-${previousChannel}`, channelUsers.get(previousChannel));
+      }
+    }
+    
+    // Update the current channel reference for this socket
+    currentChannel = newChannel;
+    
+    // Join the new channel
+    handleChannelJoin.call(socket, newChannel);
+  });
 
   socket.on("disconnecting", () => {
     // Clean up all files being processed for this socket
