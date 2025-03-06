@@ -32,6 +32,9 @@ app.use(siofu.router);
 router(app);
 setupProductionEnv(app);
 
+// Track connected users per channel
+const channelUsers = new Map();
+
 server.listen(port, () => console.log(`HTTPS Server is Listening on: ${port}`));
 
 io.on("connection", handleSocketConnection);
@@ -39,6 +42,7 @@ io.on("connection", handleSocketConnection);
 function handleSocketConnection(socket) {
   const fileUploadInstance = new siofu();
   let fileMetadataMap = new Map();
+  let currentChannel = null;
 
   // Specify the directory to save uploaded files
   fileUploadInstance.dir = join(__dirname, "uploads");
@@ -87,9 +91,28 @@ function handleSocketConnection(socket) {
       handleDisconnectDuringUpload(socket, metadata);
     });
     fileMetadataMap.clear();
+    
+    // Remove user from current channel if they were in one
+    if (currentChannel) {
+      if (channelUsers.has(currentChannel)) {
+        channelUsers.set(currentChannel, channelUsers.get(currentChannel) - 1);
+        
+        // If count reaches 0, remove the channel entry
+        if (channelUsers.get(currentChannel) <= 0) {
+          channelUsers.delete(currentChannel);
+        } else {
+          // Emit updated user count to remaining users in the channel
+          io.emit(`connections-${currentChannel}`, channelUsers.get(currentChannel));
+        }
+      }
+    }
   });
 
-  socket.on("channel-join", handleChannelJoin);
+  socket.on("channel-join", (channel) => {
+    // Save the current channel for this socket
+    currentChannel = channel;
+    handleChannelJoin.call(socket, channel);
+  });
 
   socket.on("disconnecting", () => {
     // Clean up all files being processed for this socket
@@ -157,8 +180,25 @@ async function handleUploadDone(socket, fileMetadata, event) {
 
 function handleChannelJoin(channel) {
   console.log(this.id, "joining channel", channel);
+  
+  // Update channel users count
+  if (!channelUsers.has(channel)) {
+    channelUsers.set(channel, 1);
+  } else {
+    channelUsers.set(channel, channelUsers.get(channel) + 1);
+  }
+  
+  // Get current user count
+  const userCount = channelUsers.get(channel);
+  
+  // Broadcast join event to other users in the channel
   this.broadcast.emit(`join-${channel}`, "true");
+  
+  // Send connection confirmation to joining user
   io.to(this.id).emit(`channel-join-${channel}`, "Successfully connected.");
+  
+  // Broadcast updated user count to all users in the channel
+  io.emit(`connections-${channel}`, userCount);
 }
 
 async function emitTotalThrows() {

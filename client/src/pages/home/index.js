@@ -152,6 +152,7 @@ export const Home = memo((props) => {
   var instance = new SocketIOFileUpload(socket);
   const [channel, setChannel] = useState("");
   const [total, setTotal] = useState(0);
+  const [connectedUsers, setConnectedUsers] = useState(0);
   const [throwing, setThrowing] = useState(false);
   const [toasts, setToasts] = useState([]);
   const fileRef = useRef(null);
@@ -475,8 +476,8 @@ export const Home = memo((props) => {
       // TODO: Play Notification Sound
     });
 
-    socket.on(`connections-${channel}`, (data) => {
-      console.log(data);
+    socket.on(`connections-${channel}`, (count) => {
+      setConnectedUsers(count);
     });
 
     document.onpaste = (evt) => {
@@ -860,6 +861,7 @@ export const Home = memo((props) => {
                 </div>
                 <small style={{ fontSize: "0.5rem" }}>
                   <div>Total files shared: {total}</div>
+                  <div>Connected users in channel: {connectedUsers}</div>
                   <p style={{ marginBottom: 0 }}>
                     throwmyfile.com @{new Date().getFullYear()}
                   </p>
