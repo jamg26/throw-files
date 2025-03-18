@@ -393,54 +393,24 @@ export const Home = memo((props) => {
       if (buffers[fileId]) {
         const fileData = buffers[fileId];
 
-        if (fileData.fileInfo.compressed) {
-          addToast("Great!", "Receiving compressed files...", "info");
+        console.log("## ", {
+          compressed: fileData.fileInfo.compressed,
+          chunks: fileData.chunks,
+          fileInfo: fileData.fileInfo,
+        });
 
-          try {
-            // Handle compressed file (zip)
-            const blob = new Blob(fileData.chunks, { type: "application/zip" });
-            const zip = new JSZip();
-
-            // Load the zip file
-            const zipContent = await zip.loadAsync(blob);
-
-            // Extract and download each file
-            const files = Object.keys(zipContent.files).filter(
-              (filename) => !zipContent.files[filename].dir
-            );
-
-            // Update status
-            addToast("Great!", `Extracted ${files.length} files`, "success");
-
-            // Download each file
-            for (const filename of files) {
-              const content = await zipContent.files[filename].async("blob");
-              const objectUrl = URL.createObjectURL(content);
-              const a = document.createElement("a");
-              a.href = objectUrl;
-              a.download = filename;
-              a.click();
-              URL.revokeObjectURL(objectUrl);
-            }
-          } catch (error) {
-            console.error("Error extracting zip:", error);
-            addToast("Error", "Failed to extract files from archive", "danger");
-          }
-        } else {
-          // Handle single file (non-zip)
-          addToast(
-            "Great!",
-            `You received the file: ${data.file_name}`,
-            "success"
-          );
-          const blob = new Blob(fileData.chunks, { type: data.type });
-          const objectUrl = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = objectUrl;
-          a.download = data.file_name;
-          a.click();
-          URL.revokeObjectURL(objectUrl);
-        }
+        addToast(
+          "Great!",
+          `You received the file: ${data.file_name}`,
+          "success"
+        );
+        const blob = new Blob(fileData.chunks, { type: data.type });
+        const objectUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = objectUrl;
+        a.download = data.file_name;
+        a.click();
+        URL.revokeObjectURL(objectUrl);
 
         window.navigator.vibrate(200);
 
