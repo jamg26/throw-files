@@ -148,6 +148,222 @@ const FeaturePopup = ({ visible, onClose }) => {
   );
 };
 
+// History Modal component
+const HistoryModal = ({
+  visible,
+  onClose,
+  sentFilesHistory,
+  receivedFilesHistory,
+  onClearHistory,
+  formatFileSize,
+  formatTime,
+  trimFileName,
+  isDarkMode,
+}) => {
+  const [activeTab, setActiveTab] = useState("all");
+
+  const getAllFiles = () => {
+    const allFiles = [
+      ...sentFilesHistory.map((file) => ({ ...file, type: "sent" })),
+      ...receivedFilesHistory.map((file) => ({ ...file, type: "received" })),
+    ].sort(
+      (a, b) =>
+        new Date(b.sentAt || b.receivedAt) - new Date(a.sentAt || a.receivedAt)
+    );
+
+    return allFiles;
+  };
+
+  const getFilteredFiles = () => {
+    switch (activeTab) {
+      case "sent":
+        return sentFilesHistory.map((file) => ({ ...file, type: "sent" }));
+      case "received":
+        return receivedFilesHistory.map((file) => ({
+          ...file,
+          type: "received",
+        }));
+      default:
+        return getAllFiles();
+    }
+  };
+
+  const renderHistoryContent = () => {
+    const files = getFilteredFiles();
+
+    if (files.length === 0) {
+      return (
+        <div style={{ textAlign: "center", padding: "40px 20px" }}>
+          <Text color="textDisabled" style={{ fontSize: "16px" }}>
+            📁 No files {activeTab === "all" ? "transferred" : activeTab} yet in
+            this session
+          </Text>
+          <br />
+          <Text
+            color="textDisabled"
+            style={{ fontSize: "14px", marginTop: "8px" }}
+          >
+            Your {activeTab === "all" ? "file transfers" : `${activeTab} files`}{" "}
+            will appear here temporarily until page refresh
+          </Text>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ maxHeight: "400px", overflowY: "auto" }}>
+        <List
+          size="small"
+          dataSource={files}
+          renderItem={(file, index) => (
+            <List.Item
+              style={{
+                border: "none",
+                borderBottom:
+                  index < files.length - 1 ? "1px solid #f0f0f0" : "none",
+              }}
+            >
+              <div style={{ width: "100%", padding: "8px 0" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: "6px",
+                  }}
+                >
+                  <Text
+                    strong
+                    style={{
+                      fontSize: "14px",
+                      color: "#000",
+                    }}
+                  >
+                    {file.type === "sent" ? "📤" : "�"} {file.name}{" "}
+                    {file.compressed && (
+                      <span style={{ color: "#ED4B9E" }}>(Compressed)</span>
+                    )}
+                  </Text>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-end",
+                    }}
+                  >
+                    <Text
+                      small
+                      color="textSubtle"
+                      style={{ fontSize: "12px", color: "#000" }}
+                    >
+                      {formatTime(file.sentAt || file.receivedAt)}
+                    </Text>
+                    <Text
+                      small
+                      style={{
+                        fontSize: "10px",
+                        color: file.type === "sent" ? "#52c41a" : "#1890ff",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {file.type === "sent" ? "SENT" : "RECEIVED"}
+                    </Text>
+                  </div>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "12px",
+                  }}
+                >
+                  <Text small color="textSubtle">
+                    📊 Size: {formatFileSize(file.size)}
+                  </Text>
+                  <Text small color="textSubtle">
+                    🔗 Channel: {file.channel}
+                  </Text>
+                </div>
+              </div>
+            </List.Item>
+          )}
+        />
+      </div>
+    );
+  };
+
+  const totalFiles = sentFilesHistory.length + receivedFilesHistory.length;
+
+  return (
+    <Modal
+      title={
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ fontSize: "18px" }}>📋</span>
+          <span>File Transfer History ({totalFiles})</span>
+        </div>
+      }
+      visible={visible}
+      onCancel={onClose}
+      centered
+      width={700}
+      footer={
+        totalFiles > 0 ? (
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <Button onClick={onClearHistory} style={{ color: "#fff" }}>
+              Clear All History
+            </Button>
+            <Button type="primary" onClick={onClose}>
+              Close
+            </Button>
+          </div>
+        ) : (
+          <Button type="primary" onClick={onClose}>
+            Close
+          </Button>
+        )
+      }
+    >
+      {/* Tab buttons */}
+      <div style={{ marginBottom: "16px" }}>
+        <div style={{ display: "flex", gap: "0" }}>
+          {[
+            { key: "all", label: `All (${totalFiles})`, icon: "📋" },
+            {
+              key: "sent",
+              label: `Sent (${sentFilesHistory.length})`,
+              icon: "📤",
+            },
+            {
+              key: "received",
+              label: `Received (${receivedFilesHistory.length})`,
+              icon: "📥",
+            },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              style={{
+                padding: "8px 16px",
+                border: "none",
+                background: activeTab === tab.key ? "#ED4B9E" : "transparent",
+                color: activeTab === tab.key ? "white" : "#666",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: activeTab === tab.key ? "bold" : "normal",
+                borderRadius: "4px 4px 0 0",
+                marginBottom: "-1px",
+              }}
+            >
+              {tab.icon} {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {renderHistoryContent()}
+    </Modal>
+  );
+};
+
 export const Home = memo((props) => {
   var instance = new SocketIOFileUpload(socket);
   const [channel, setChannel] = useState("");
@@ -163,6 +379,10 @@ export const Home = memo((props) => {
   const [filesBeingTransferred, setFilesBeingTransferred] = useState([]);
   const [compressFiles, setCompressFiles] = useState(true);
   const [showFeaturePopup, setShowFeaturePopup] = useState(false);
+  const [sentFilesHistory, setSentFilesHistory] = useState([]);
+  const [receivedFilesHistory, setReceivedFilesHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const { isDarkMode, toggleTheme } = useContext(ThemeContext);
 
   const [sizeLimit, setSizeLimit] = useState("5GB");
@@ -210,14 +430,6 @@ export const Home = memo((props) => {
     onRest: () => set(!flip),
   });
 
-  // Check if feature popup has been shown before
-  useEffect(() => {
-    const hasSeenPopup = localStorage.getItem("hasSeenMultiFileFeature");
-    if (!hasSeenPopup) {
-      setShowFeaturePopup(true);
-    }
-  }, []);
-
   // Handle popup close
   const handleFeaturePopupClose = () => {
     setShowFeaturePopup(false);
@@ -258,6 +470,20 @@ export const Home = memo((props) => {
         `${event.file.name} uploaded successfully`,
         "success"
       );
+
+      // Add to sent files history
+      const sentFile = {
+        id: event.file.id,
+        name: event.file.name,
+        size: event.file.size,
+        type: event.file.type,
+        sentAt: new Date(),
+        channel: channel,
+        compressed: event.file.meta?.compressed || false,
+      };
+
+      setSentFilesHistory((prev) => [sentFile, ...prev]);
+
       setProgress((prev) => {
         const updated = { ...prev };
         delete updated[event.file.id];
@@ -404,6 +630,20 @@ export const Home = memo((props) => {
           `You received the file: ${data.file_name}`,
           "success"
         );
+
+        // Add to received files history
+        const receivedFile = {
+          id: fileId,
+          name: data.file_name,
+          size: fileData.fileInfo.size,
+          type: data.type,
+          receivedAt: new Date(),
+          channel: channel,
+          compressed: fileData.fileInfo.compressed || false,
+        };
+
+        setReceivedFilesHistory((prev) => [receivedFile, ...prev]);
+
         const blob = new Blob(fileData.chunks, { type: data.type });
         const objectUrl = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -714,11 +954,217 @@ export const Home = memo((props) => {
     );
   };
 
+  // Helper function to format file size
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
+  // Helper function to format time
+  const formatTime = (date) => {
+    return date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  // Helper function to trim long file names
+  const trimFileName = (fileName, maxLength = 20) => {
+    if (fileName.length <= maxLength) return fileName;
+
+    const extension = fileName.split(".").pop();
+    const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf("."));
+
+    if (nameWithoutExt.length <= maxLength - extension.length - 4) {
+      return fileName;
+    }
+
+    const trimmedName = nameWithoutExt.substring(
+      0,
+      Math.max(5, maxLength - extension.length - 4)
+    );
+    return `${trimmedName}....${nameWithoutExt.slice(-3)}.${extension}`;
+  };
+
+  // Render sent and received files history (inline version - shows recent 3 files)
+  const renderFileHistory = () => {
+    const allFiles = [
+      ...sentFilesHistory.map((file) => ({ ...file, type: "sent" })),
+      ...receivedFilesHistory.map((file) => ({ ...file, type: "received" })),
+    ].sort(
+      (a, b) =>
+        new Date(b.sentAt || b.receivedAt) - new Date(a.sentAt || a.receivedAt)
+    );
+
+    if (allFiles.length === 0) {
+      return (
+        <div style={{ textAlign: "center", padding: "20px" }}>
+          <Text color="textDisabled">
+            No files transferred yet in this session
+          </Text>
+        </div>
+      );
+    }
+
+    // Show only the 3 most recent files in inline view
+    const recentFiles = allFiles.slice(0, 3);
+
+    return (
+      <div>
+        <List
+          size="small"
+          bordered={false}
+          dataSource={recentFiles}
+          renderItem={(file, index) => (
+            <div
+              style={{
+                padding: "8px 12px",
+                border: `1px solid ${isDarkMode ? "#333" : "gray"}`,
+                borderRadius: "6px",
+                marginBottom: index < recentFiles.length - 1 ? "8px" : "0",
+                background: isDarkMode ? "#2a2a2a" : "#ffffff",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: "4px",
+                }}
+              >
+                <Text
+                  strong
+                  style={{
+                    color: isDarkMode ? "#fff" : "#000",
+                    fontSize: "13px",
+                  }}
+                >
+                  {file.type === "sent" ? "📤" : "📥"}
+                  <span title={file.name} style={{ marginLeft: "4px" }}>
+                    {trimFileName(file.name)}
+                  </span>
+                  {file.compressed && (
+                    <span style={{ color: "#ED4B9E", marginLeft: "4px" }}>
+                      (Compressed)
+                    </span>
+                  )}
+                </Text>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-end",
+                  }}
+                >
+                  <Text
+                    small
+                    style={{
+                      fontSize: "11px",
+                      color: isDarkMode ? "#888" : "#666",
+                    }}
+                  >
+                    {formatTime(file.sentAt || file.receivedAt)}
+                  </Text>
+                  <Text
+                    small
+                    style={{
+                      fontSize: "9px",
+                      color: file.type === "sent" ? "#52c41a" : "#1890ff",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {file.type === "sent" ? "SENT" : "RECEIVED"}
+                  </Text>
+                </div>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "11px",
+                }}
+              >
+                <Text
+                  small
+                  style={{
+                    color: isDarkMode ? "#888" : "#666",
+                  }}
+                >
+                  Size: {formatFileSize(file.size)}
+                </Text>
+                <Text
+                  small
+                  style={{
+                    color: isDarkMode ? "#888" : "#666",
+                  }}
+                >
+                  Channel: {file.channel}
+                </Text>
+              </div>
+            </div>
+          )}
+        />
+        {allFiles.length > 3 && (
+          <div
+            style={{
+              textAlign: "center",
+              padding: "8px",
+              background: isDarkMode ? "#333" : "#f8f9fa",
+              borderRadius: "4px",
+              marginTop: "8px",
+              border: `1px solid ${isDarkMode ? "#444" : "gray"}`,
+            }}
+          >
+            <Text
+              small
+              style={{
+                color: isDarkMode ? "#888" : "#666",
+              }}
+            >
+              ... and {allFiles.length - 3} more files.
+              <Button
+                variant="text"
+                scale="sm"
+                onClick={() => setShowHistoryModal(true)}
+                style={{
+                  padding: "0 4px",
+                  color: "#ED4B9E",
+                  background: "transparent",
+                }}
+              >
+                View all
+              </Button>
+            </Text>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <HomeComponent>
       <FeaturePopup
         visible={showFeaturePopup}
         onClose={handleFeaturePopupClose}
+      />
+
+      <HistoryModal
+        visible={showHistoryModal}
+        onClose={() => setShowHistoryModal(false)}
+        sentFilesHistory={sentFilesHistory}
+        receivedFilesHistory={receivedFilesHistory}
+        onClearHistory={() => {
+          setSentFilesHistory([]);
+          setReceivedFilesHistory([]);
+        }}
+        formatFileSize={formatFileSize}
+        formatTime={formatTime}
+        trimFileName={trimFileName}
+        isDarkMode={isDarkMode}
       />
 
       <Row justify="center" style={{ margin: "20px" }}>
@@ -826,6 +1272,93 @@ export const Home = memo((props) => {
                     )}
                   </Popconfirm>
                 </Space>
+
+                {/* File History Section */}
+                <div
+                  style={{
+                    border: `1px solid ${isDarkMode ? "#333" : "#f0f0f0"}`,
+                    borderRadius: "8px",
+                    padding: "12px",
+                    background: isDarkMode ? "#2a2a2a" : "#fafbfc",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: showHistory ? "12px" : "0",
+                    }}
+                  >
+                    <div>
+                      <Text
+                        style={{
+                          fontWeight: "600",
+                          color: isDarkMode ? "#ffffff" : "#000000",
+                        }}
+                      >
+                        📋 File History (
+                        {sentFilesHistory.length + receivedFilesHistory.length})
+                      </Text>
+                      <br />
+                      <Text
+                        small
+                        style={{
+                          fontSize: "11px",
+                          color: isDarkMode ? "#888" : "#666",
+                        }}
+                      >
+                        📤 {sentFilesHistory.length} sent • 📥{" "}
+                        {receivedFilesHistory.length} received
+                      </Text>
+                    </div>
+                    <Space>
+                      {sentFilesHistory.length + receivedFilesHistory.length >
+                        0 && (
+                        <Button
+                          scale="sm"
+                          variant="tertiary"
+                          onClick={() => setShowHistory(!showHistory)}
+                        >
+                          {showHistory ? "Hide" : "Recent"}
+                        </Button>
+                      )}
+                      <Button
+                        scale="sm"
+                        variant="primary"
+                        onClick={() => setShowHistoryModal(true)}
+                        disabled={
+                          sentFilesHistory.length +
+                            receivedFilesHistory.length ===
+                          0
+                        }
+                      >
+                        View All
+                      </Button>
+                    </Space>
+                  </div>
+
+                  {showHistory && (
+                    <div style={{ maxHeight: "200px", overflowY: "auto" }}>
+                      {renderFileHistory()}
+                    </div>
+                  )}
+
+                  {sentFilesHistory.length + receivedFilesHistory.length ===
+                    0 && (
+                    <Text
+                      small
+                      style={{
+                        fontStyle: "italic",
+                        color: isDarkMode ? "#888" : "#666",
+                      }}
+                    >
+                      Your sent and received files will appear here during this
+                      session
+                    </Text>
+                  )}
+                </div>
+
                 <div
                   style={{
                     display: "flex",
@@ -855,7 +1388,7 @@ export const Home = memo((props) => {
                   <p style={{ marginBottom: 0 }}>
                     throwmyfile.com @{new Date().getFullYear()}
                   </p>
-                  <a href="/privacy-policy">privacy policy</a>
+                  <a href="/privacy-policy">Privacy Policy</a>
                   <p>
                     <a
                       href="mailto:jammmg26@gmail.com"
