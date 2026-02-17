@@ -21,6 +21,7 @@ import {
   ReloadOutlined,
   CopyOutlined,
   ShareAltOutlined,
+  GithubOutlined,
 } from "@ant-design/icons";
 import io from "socket.io-client";
 import type { Socket } from "socket.io-client";
@@ -1415,6 +1416,22 @@ export const Home = memo(() => {
                       Active Channel
                     </Text>
                     <Space size="middle">
+                      <div title="View Source on GitHub">
+                        <a 
+                          href="https://github.com/jamg26/throw-files" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          style={{ color: "inherit" }}
+                        >
+                          <GithubOutlined
+                            style={{
+                              fontSize: "20px",
+                              cursor: "pointer",
+                              color: isDarkMode ? "#E2E8F0" : "#0F172A",
+                            }}
+                          />
+                        </a>
+                      </div>
                       <div title="Copy to clipboard">
                         <CopyOutlined
                           style={{
