@@ -50,8 +50,8 @@ const BACKEND_URL =
     process.env &&
     process.env.REACT_APP_BACKEND_URL) ||
   (typeof window !== "undefined" &&
-    window.ENV &&
-    window.ENV.REACT_APP_BACKEND_URL) ||
+    (window as any).ENV &&
+    (window as any).ENV.REACT_APP_BACKEND_URL) ||
   "http://localhost:5000";
 
 // Get frontend URL from environment variables
@@ -60,8 +60,8 @@ const FRONTEND_URL =
     process.env &&
     process.env.REACT_APP_FRONTEND_URL) ||
   (typeof window !== "undefined" &&
-    window.ENV &&
-    window.ENV.REACT_APP_FRONTEND_URL) ||
+    (window as any).ENV &&
+    (window as any).ENV.REACT_APP_FRONTEND_URL) ||
   "http://localhost:3000";
 
 const socket: Socket = io(BACKEND_URL, {
@@ -75,11 +75,10 @@ const socket: Socket = io(BACKEND_URL, {
 interface FeaturePopupProps {
   visible: boolean;
   onClose: () => void;
-  isDarkMode: boolean;
 }
 
 // Feature announcement popup
-const FeaturePopup = ({ visible, onClose, isDarkMode }: FeaturePopupProps) => {
+const FeaturePopup = ({ visible, onClose }: FeaturePopupProps) => {
   return (
     <Modal
       title={null}
@@ -92,9 +91,7 @@ const FeaturePopup = ({ visible, onClose, isDarkMode }: FeaturePopupProps) => {
     >
       <div
         style={{
-          background: isDarkMode
-            ? "linear-gradient(135deg, #1e1e32 0%, #2d1b4e 100%)"
-            : "linear-gradient(135deg, #FAF5FF 0%, #E9D5FF 100%)",
+          background: "linear-gradient(135deg, #1e1e32 0%, #2d1b4e 100%)",
           padding: "32px",
           borderRadius: "16px",
           position: "relative",
@@ -108,9 +105,7 @@ const FeaturePopup = ({ visible, onClose, isDarkMode }: FeaturePopupProps) => {
             right: "-20px",
             width: "150px",
             height: "150px",
-            background: isDarkMode
-              ? "rgba(124, 58, 237, 0.2)"
-              : "rgba(124, 58, 237, 0.1)",
+            background: "rgba(124, 58, 237, 0.2)",
             borderRadius: "50%",
             zIndex: 0,
           }}
@@ -122,9 +117,7 @@ const FeaturePopup = ({ visible, onClose, isDarkMode }: FeaturePopupProps) => {
             left: "-40px",
             width: "200px",
             height: "200px",
-            background: isDarkMode
-              ? "rgba(124, 58, 237, 0.1)"
-              : "rgba(124, 58, 237, 0.05)",
+            background: "rgba(124, 58, 237, 0.1)",
             borderRadius: "50%",
             zIndex: 0,
           }}
@@ -136,7 +129,7 @@ const FeaturePopup = ({ visible, onClose, isDarkMode }: FeaturePopupProps) => {
           </Title>
 
           <Text
-            color={isDarkMode ? "#E2E8F0" : "#4C1D95"}
+            color="#E2E8F0"
             bold
             style={{ display: "block", fontSize: "18px", marginBottom: "16px" }}
           >
@@ -144,7 +137,7 @@ const FeaturePopup = ({ visible, onClose, isDarkMode }: FeaturePopupProps) => {
           </Text>
 
           <Text
-            color={isDarkMode ? "#A78BFA" : "#6B21A8"}
+            color="#A78BFA"
             style={{ display: "block", marginBottom: "24px" }}
           >
             We've upgraded! Now you can select multiple files at once for more
@@ -192,7 +185,6 @@ interface HistoryModalProps {
   formatFileSize: (bytes: number) => string;
   formatTime: (date: Date) => string;
   trimFileName: (fileName: string, maxLength?: number) => string;
-  isDarkMode: boolean;
 }
 
 // History Modal component
@@ -205,7 +197,6 @@ const HistoryModal = ({
   formatFileSize,
   formatTime,
   trimFileName,
-  isDarkMode,
 }: HistoryModalProps) => {
   const [activeTab, setActiveTab] = useState("all");
 
@@ -278,9 +269,7 @@ const HistoryModal = ({
                 border: "none",
                 borderBottom:
                   index < files.length - 1
-                    ? isDarkMode
-                      ? "1px solid rgba(255, 255, 255, 0.1)"
-                      : "1px solid rgba(0, 0, 0, 0.1)"
+                    ? "1px solid rgba(255, 255, 255, 0.1)"
                     : "none",
               }}
             >
@@ -467,7 +456,6 @@ export const Home = memo(() => {
   >([]);
   const [showHistory, setShowHistory] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const { isDarkMode } = useContext(ThemeContext);
 
   const [sizeLimit] = useState("5GB");
 
@@ -1070,9 +1058,7 @@ export const Home = memo(() => {
                     <div
                       style={{
                         height: "4px",
-                        background: isDarkMode
-                          ? "rgba(255, 255, 255, 0.1)"
-                          : "rgba(0, 0, 0, 0.1)",
+                        background: "rgba(255, 255, 255, 0.1)",
                         borderRadius: "2px",
                         overflow: "hidden",
                       }}
@@ -1189,10 +1175,10 @@ export const Home = memo(() => {
             <div
               style={{
                 padding: "8px 12px",
-                border: `1px solid ${isDarkMode ? "#333" : "gray"}`,
+                border: `1px solid #333`,
                 borderRadius: "6px",
                 marginBottom: index < recentFiles.length - 1 ? "8px" : "0",
-                background: isDarkMode ? "#2a2a2a" : "#ffffff",
+                background: "#2a2a2a",
               }}
             >
               <div
@@ -1205,7 +1191,7 @@ export const Home = memo(() => {
                 <Text
                   strong
                   style={{
-                    color: isDarkMode ? "#E2E8F0" : "#000",
+                    color: "#E2E8F0",
                     fontSize: "13px",
                   }}
                 >
@@ -1231,7 +1217,7 @@ export const Home = memo(() => {
                     small
                     style={{
                       fontSize: "11px",
-                      color: isDarkMode ? "#94A3B8" : "#666",
+                      color: "#94A3B8",
                     }}
                   >
                     {formatTime(new Date(file.sentAt || file.receivedAt!))}
@@ -1258,7 +1244,7 @@ export const Home = memo(() => {
                 <Text
                   small
                   style={{
-                    color: isDarkMode ? "#888" : "#666",
+                    color: "#888",
                   }}
                 >
                   Size: {formatFileSize(file.size)}
@@ -1266,7 +1252,7 @@ export const Home = memo(() => {
                 <Text
                   small
                   style={{
-                    color: isDarkMode ? "#888" : "#666",
+                    color: "#888",
                   }}
                 >
                   Channel: {file.channel}
@@ -1280,16 +1266,16 @@ export const Home = memo(() => {
             style={{
               textAlign: "center",
               padding: "8px",
-              background: isDarkMode ? "#333" : "#f8f9fa",
+              background: "#333",
               borderRadius: "4px",
               marginTop: "8px",
-              border: `1px solid ${isDarkMode ? "#444" : "gray"}`,
+              border: `1px solid #444`,
             }}
           >
             <Text
               small
               style={{
-                color: isDarkMode ? "#888" : "#666",
+                color: "#888",
               }}
             >
               ... and {allFiles.length - 3} more files.
@@ -1318,7 +1304,6 @@ export const Home = memo(() => {
       <FeaturePopup
         visible={showFeaturePopup}
         onClose={handleFeaturePopupClose}
-        isDarkMode={isDarkMode}
       />
 
       <HistoryModal
@@ -1333,7 +1318,6 @@ export const Home = memo(() => {
         formatFileSize={formatFileSize}
         formatTime={formatTime}
         trimFileName={trimFileName}
-        isDarkMode={isDarkMode}
       />
 
       <Row justify="center" style={{ margin: "20px" }}>
@@ -1371,14 +1355,10 @@ export const Home = memo(() => {
               >
                 <div
                   style={{
-                    background: isDarkMode
-                      ? "rgba(255, 255, 255, 0.05)"
-                      : "rgba(124, 58, 237, 0.03)",
+                    background: "rgba(255, 255, 255, 0.05)",
                     padding: "32px",
                     borderRadius: "24px",
-                    border: isDarkMode
-                      ? "1px solid rgba(255, 255, 255, 0.1)"
-                      : "1px solid rgba(124, 58, 237, 0.1)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
                     position: "relative",
                     overflow: "hidden",
                   }}
@@ -1410,28 +1390,12 @@ export const Home = memo(() => {
                         fontSize: "12px",
                         textTransform: "uppercase",
                         letterSpacing: "2px",
-                        opacity: isDarkMode ? 0.5 : 0.7,
+                        opacity: 0.5,
                       }}
                     >
                       Active Channel
                     </Text>
                     <Space size="middle">
-                      <div title="View Source on GitHub">
-                        <a 
-                          href="https://github.com/jamg26/throw-files" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          style={{ color: "inherit" }}
-                        >
-                          <GithubOutlined
-                            style={{
-                              fontSize: "20px",
-                              cursor: "pointer",
-                              color: isDarkMode ? "#E2E8F0" : "#0F172A",
-                            }}
-                          />
-                        </a>
-                      </div>
                       <div title="Copy to clipboard">
                         <CopyOutlined
                           style={{
@@ -1487,7 +1451,7 @@ export const Home = memo(() => {
                       small
                       bold
                       style={{
-                        opacity: isDarkMode ? 0.5 : 0.8,
+                        opacity: 0.5,
                         marginLeft: "4px",
                       }}
                     >
@@ -1545,7 +1509,9 @@ export const Home = memo(() => {
                 >
                   <Popconfirm
                     title="Your files will be shared across the channel."
-                    onConfirm={handleSendClick}
+                    onConfirm={() => {
+                      fileRef.current && fileRef.current.click();
+                    }}
                     okText="Confirm"
                     cancelText="Cancel"
                   >
@@ -1588,14 +1554,10 @@ export const Home = memo(() => {
                 {/* File History Section */}
                 <div
                   style={{
-                    border: isDarkMode
-                      ? `1px solid rgba(255, 255, 255, 0.05)`
-                      : `1px solid rgba(0, 0, 0, 0.05)`,
+                    border: "1px solid rgba(255, 255, 255, 0.05)",
                     borderRadius: "20px",
                     padding: "20px",
-                    background: isDarkMode
-                      ? "rgba(255, 255, 255, 0.02)"
-                      : "rgba(0, 0, 0, 0.02)",
+                    background: "rgba(255, 255, 255, 0.02)",
                   }}
                 >
                   <div
@@ -1611,7 +1573,7 @@ export const Home = memo(() => {
                         style={{
                           fontWeight: "700",
                           fontSize: "16px",
-                          color: isDarkMode ? "#E2E8F0" : "#0F172A",
+                          color: "#E2E8F0",
                         }}
                       >
                         File History
@@ -1621,7 +1583,7 @@ export const Home = memo(() => {
                         small
                         style={{
                           fontSize: "12px",
-                          opacity: isDarkMode ? 0.5 : 0.7,
+                          opacity: 0.5,
                         }}
                       >
                         {sentFilesHistory.length} sent •{" "}
@@ -1680,6 +1642,16 @@ export const Home = memo(() => {
                     throwmyfile.com &copy; {new Date().getFullYear()} •{" "}
                     <a href="/privacy-policy" style={{ color: "inherit" }}>
                       Privacy
+                    </a>
+                    {" • "}
+                    <a
+                      href="https://github.com/jamg26/throw-files"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: "inherit", verticalAlign: "middle" }}
+                      title="View Source on GitHub"
+                    >
+                      <GithubOutlined style={{ fontSize: "14px" }} />
                     </a>
                   </div>
                 </div>
