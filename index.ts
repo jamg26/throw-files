@@ -266,14 +266,14 @@ function getServerOptions() {
 }
 
 function setupProductionEnv(app: Express) {
-  if (process.env.NODE_ENV === "production") {
-    const buildPath = join(__dirname, "client/build");
+  if (process.env.NODE_ENV === 'production') {
+    const buildPath = join(process.cwd(), 'client/build');
     app.use(express.static(buildPath));
-    app.get("/service-worker.js", (req: Request, res: Response) =>
-      res.sendFile(resolve("client", "build", "worker.js")),
+    app.get('/service-worker.js', (req: Request, res: Response) =>
+      res.sendFile(join(process.cwd(), 'client', 'build', 'worker.js'))
     );
-    app.get("*", (req: Request, res: Response) =>
-      res.sendFile(resolve("client", "build", "index.html")),
+    app.get('*', (req: Request, res: Response) =>
+      res.sendFile(join(process.cwd(), 'client', 'build', 'index.html'))
     );
   }
 }

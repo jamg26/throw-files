@@ -9,9 +9,9 @@
     "server": "env-cmd -f .env.dev nodemon --exec ts-node index.ts",
     "client": "npm run dev --prefix client",
     "client-back": "npm start --prefix client",
-    "build": "set NPM_CONFIG_PRODUCTION=false && npm install && npm install -g @rsbuild/core && npm install --prefix client --legacy-peer-deps && npm run build --prefix client",
+    "build": "npm install && npm install --prefix client --legacy-peer-deps && npm run build --prefix client && npx tsc",
     "heroku-postbuild": "npm run build",
-    "start": "ts-node index.ts"
+    "start": "node dist/index.js"
   },
   "author": "",
   "license": "ISC",
@@ -26,7 +26,8 @@
     "redis": "^4.5.1",
     "socket.io": "^4.7.5",
     "socket.io-stream": "^0.9.1",
-    "socketio-file-upload": "^0.7.3"
+    "socketio-file-upload": "^0.7.3",
+    "typescript": "^5.9.3"
   },
   "devDependencies": {
     "@types/express": "^4.17.25",
@@ -40,7 +41,6 @@
     "concurrently": "^6.5.1",
     "env-cmd": "^10.1.0",
     "nodemon": "^2.0.15",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "ts-node": "^10.9.2"
   }
 }
