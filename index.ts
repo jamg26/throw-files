@@ -25,7 +25,7 @@ setupProductionEnv(app);
 // Track connected users per channel
 const channelUsers = new Map<string, number>();
 
-server.listen(port, () => console.log(`HTTPS Server is Listening on: ${port}`));
+server.listen(port, () => console.log(`Server is Listening on: ${port}`));
 
 io.on("connection", handleSocketConnection);
 
@@ -43,7 +43,7 @@ function handleSocketConnection(socket: Socket) {
   let currentChannel: string | null = null;
 
   // Specify the directory to save uploaded files
-  fileUploadInstance.dir = join(__dirname, "uploads");
+  fileUploadInstance.dir = join(process.cwd(), "uploads");
 
   // Ensure the upload directory exists
   if (!fs.existsSync(fileUploadInstance.dir)) {
