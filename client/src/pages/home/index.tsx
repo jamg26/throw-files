@@ -1,4 +1,11 @@
-import { memo, useEffect, useRef, useState, useContext } from "react";
+import {
+  memo,
+  useEffect,
+  useRef,
+  useState,
+  useContext,
+  ChangeEvent,
+} from "react";
 import {
   Row,
   Col,
@@ -6,29 +13,34 @@ import {
   Tooltip,
   Popconfirm,
   List,
-  Switch,
   Modal,
+  Typography,
+  message,
 } from "antd";
-import io from "socket.io-client";
-import randomstring from "randomstring";
-import { Button, Input, Card, CardBody, CardHeader } from "../../components";
 import {
+  ReloadOutlined,
+  CopyOutlined,
+  ShareAltOutlined,
+} from "@ant-design/icons";
+import io from "socket.io-client";
+import type { Socket } from "socket.io-client";
+import randomstring from "randomstring";
+import {
+  Button,
+  Input,
+  Card,
+  CardBody,
+  CardHeader,
   Text,
-  Heading,
   Link,
-  RefreshIcon,
-  CopyIcon,
-  ShareIcon,
-  MoonIcon,
-  SunIcon,
-} from "@pancakeswap/uikit";
-import { ToastContainer } from "@pancakeswap-libs/uikit";
-import { useSpring, animated, config } from "react-spring";
+} from "../../components";
+import { useSpring, config } from "react-spring";
 import styled from "styled-components";
 import JSZip from "jszip";
 import { ThemeContext } from "../../index";
+import SocketIOFileUpload from "socketio-file-upload";
 
-var SocketIOFileUpload = require("socketio-file-upload");
+const { Title } = Typography;
 
 // Get backend URL from environment variables
 const BACKEND_URL =
@@ -51,17 +63,22 @@ const FRONTEND_URL =
     window.ENV.REACT_APP_FRONTEND_URL) ||
   "http://localhost:3000";
 
-const socket = io(BACKEND_URL, {
+const socket: Socket = io(BACKEND_URL, {
   transports: ["websocket"],
-  jsonp: false,
   forceNew: true,
   extraHeaders: {
     "Bypass-Tunnel-Reminder": "true",
   },
 });
 
+interface FeaturePopupProps {
+  visible: boolean;
+  onClose: () => void;
+  isDarkMode: boolean;
+}
+
 // Feature announcement popup
-const FeaturePopup = ({ visible, onClose }) => {
+const FeaturePopup = ({ visible, onClose, isDarkMode }: FeaturePopupProps) => {
   return (
     <Modal
       title={null}
@@ -74,8 +91,10 @@ const FeaturePopup = ({ visible, onClose }) => {
     >
       <div
         style={{
-          background: "linear-gradient(139.73deg, #E6FDFF 0%, #F3EFFF 100%)",
-          padding: "24px",
+          background: isDarkMode
+            ? "linear-gradient(135deg, #1e1e32 0%, #2d1b4e 100%)"
+            : "linear-gradient(135deg, #FAF5FF 0%, #E9D5FF 100%)",
+          padding: "32px",
           borderRadius: "16px",
           position: "relative",
           overflow: "hidden",
@@ -88,7 +107,9 @@ const FeaturePopup = ({ visible, onClose }) => {
             right: "-20px",
             width: "150px",
             height: "150px",
-            background: "rgba(237, 75, 158, 0.1)",
+            background: isDarkMode
+              ? "rgba(124, 58, 237, 0.2)"
+              : "rgba(124, 58, 237, 0.1)",
             borderRadius: "50%",
             zIndex: 0,
           }}
@@ -100,28 +121,29 @@ const FeaturePopup = ({ visible, onClose }) => {
             left: "-40px",
             width: "200px",
             height: "200px",
-            background: "rgba(237, 75, 158, 0.05)",
+            background: isDarkMode
+              ? "rgba(124, 58, 237, 0.1)"
+              : "rgba(124, 58, 237, 0.05)",
             borderRadius: "50%",
             zIndex: 0,
           }}
         />
 
         <div style={{ position: "relative", zIndex: 1 }}>
-          <Heading size="xl" color="#ED4B9E" mb="16px">
+          <Title level={3} style={{ color: "#7C3AED", marginBottom: "16px" }}>
             New Feature Alert! 🎉
-          </Heading>
+          </Title>
 
           <Text
-            color="#280D5F"
+            color={isDarkMode ? "#E2E8F0" : "#4C1D95"}
             bold
-            mb="16px"
-            style={{ display: "block", fontSize: "18px" }}
+            style={{ display: "block", fontSize: "18px", marginBottom: "16px" }}
           >
             Multiple File Transfers
           </Text>
 
           <Text
-            color="#7A6EAA"
+            color={isDarkMode ? "#A78BFA" : "#6B21A8"}
             style={{ display: "block", marginBottom: "24px" }}
           >
             We've upgraded! Now you can select multiple files at once for more
@@ -148,6 +170,30 @@ const FeaturePopup = ({ visible, onClose }) => {
   );
 };
 
+interface FileHistory {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  sentAt?: Date;
+  receivedAt?: Date;
+  channel: string;
+  compressed: boolean;
+  type_info?: "sent" | "received";
+}
+
+interface HistoryModalProps {
+  visible: boolean;
+  onClose: () => void;
+  sentFilesHistory: FileHistory[];
+  receivedFilesHistory: FileHistory[];
+  onClearHistory: () => void;
+  formatFileSize: (bytes: number) => string;
+  formatTime: (date: Date) => string;
+  trimFileName: (fileName: string, maxLength?: number) => string;
+  isDarkMode: boolean;
+}
+
 // History Modal component
 const HistoryModal = ({
   visible,
@@ -159,17 +205,24 @@ const HistoryModal = ({
   formatTime,
   trimFileName,
   isDarkMode,
-}) => {
+}: HistoryModalProps) => {
   const [activeTab, setActiveTab] = useState("all");
 
   const getAllFiles = () => {
     const allFiles = [
-      ...sentFilesHistory.map((file) => ({ ...file, type: "sent" })),
-      ...receivedFilesHistory.map((file) => ({ ...file, type: "received" })),
-    ].sort(
-      (a, b) =>
-        new Date(b.sentAt || b.receivedAt) - new Date(a.sentAt || a.receivedAt)
-    );
+      ...sentFilesHistory.map((file) => ({
+        ...file,
+        type_info: "sent" as const,
+      })),
+      ...receivedFilesHistory.map((file) => ({
+        ...file,
+        type_info: "received" as const,
+      })),
+    ].sort((a, b) => {
+      const dateA = new Date(a.sentAt || a.receivedAt!).getTime();
+      const dateB = new Date(b.sentAt || b.receivedAt!).getTime();
+      return dateB - dateA;
+    });
 
     return allFiles;
   };
@@ -177,11 +230,14 @@ const HistoryModal = ({
   const getFilteredFiles = () => {
     switch (activeTab) {
       case "sent":
-        return sentFilesHistory.map((file) => ({ ...file, type: "sent" }));
+        return sentFilesHistory.map((file) => ({
+          ...file,
+          type_info: "sent" as const,
+        }));
       case "received":
         return receivedFilesHistory.map((file) => ({
           ...file,
-          type: "received",
+          type_info: "received" as const,
         }));
       default:
         return getAllFiles();
@@ -220,7 +276,11 @@ const HistoryModal = ({
               style={{
                 border: "none",
                 borderBottom:
-                  index < files.length - 1 ? "1px solid #f0f0f0" : "none",
+                  index < files.length - 1
+                    ? isDarkMode
+                      ? "1px solid rgba(255, 255, 255, 0.1)"
+                      : "1px solid rgba(0, 0, 0, 0.1)"
+                    : "none",
               }}
             >
               <div style={{ width: "100%", padding: "8px 0" }}>
@@ -235,10 +295,10 @@ const HistoryModal = ({
                     strong
                     style={{
                       fontSize: "14px",
-                      color: "#000",
+                      color: "#E2E8F0",
                     }}
                   >
-                    {file.type === "sent" ? "📤" : "�"} {file.name}{" "}
+                    {file.type_info === "sent" ? "📤" : "📥"} {file.name}{" "}
                     {file.compressed && (
                       <span style={{ color: "#ED4B9E" }}>(Compressed)</span>
                     )}
@@ -253,19 +313,20 @@ const HistoryModal = ({
                     <Text
                       small
                       color="textSubtle"
-                      style={{ fontSize: "12px", color: "#000" }}
+                      style={{ fontSize: "12px", color: "#94A3B8" }}
                     >
-                      {formatTime(file.sentAt || file.receivedAt)}
+                      {formatTime(new Date(file.sentAt || file.receivedAt!))}
                     </Text>
                     <Text
                       small
                       style={{
                         fontSize: "10px",
-                        color: file.type === "sent" ? "#52c41a" : "#1890ff",
-                        fontWeight: "bold",
+                        color:
+                          file.type_info === "sent" ? "#22C55E" : "#3B82F6",
+                        fontWeight: "700",
                       }}
                     >
-                      {file.type === "sent" ? "SENT" : "RECEIVED"}
+                      {file.type_info === "sent" ? "SENT" : "RECEIVED"}
                     </Text>
                   </div>
                 </div>
@@ -308,15 +369,15 @@ const HistoryModal = ({
       footer={
         totalFiles > 0 ? (
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <Button onClick={onClearHistory} style={{ color: "#fff" }}>
+            <Button variant="danger" onClick={onClearHistory}>
               Clear All History
             </Button>
-            <Button type="primary" onClick={onClose}>
+            <Button variant="primary" onClick={onClose}>
               Close
             </Button>
           </div>
         ) : (
-          <Button type="primary" onClick={onClose}>
+          <Button variant="primary" onClick={onClose}>
             Close
           </Button>
         )
@@ -344,13 +405,14 @@ const HistoryModal = ({
               style={{
                 padding: "8px 16px",
                 border: "none",
-                background: activeTab === tab.key ? "#ED4B9E" : "transparent",
-                color: activeTab === tab.key ? "white" : "#666",
+                background: activeTab === tab.key ? "#7C3AED" : "transparent",
+                color: activeTab === tab.key ? "white" : "#A78BFA",
                 cursor: "pointer",
                 fontSize: "14px",
-                fontWeight: activeTab === tab.key ? "bold" : "normal",
-                borderRadius: "4px 4px 0 0",
+                fontWeight: activeTab === tab.key ? "600" : "normal",
+                borderRadius: "8px 8px 0 0",
                 marginBottom: "-1px",
+                transition: "all 0.2s ease",
               }}
             >
               {tab.icon} {tab.label}
@@ -364,33 +426,68 @@ const HistoryModal = ({
   );
 };
 
-export const Home = memo((props) => {
-  var instance = new SocketIOFileUpload(socket);
+interface TransferredFile {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  compressed: boolean;
+  receiving?: boolean;
+}
+
+export const Home = memo(() => {
+  // Use a ref to hold the instance to persist it across renders
+  const instanceRef = useRef<SocketIOFileUpload | null>(null);
+
+  if (!instanceRef.current) {
+    instanceRef.current = new SocketIOFileUpload(socket);
+  }
+
+  const instance = instanceRef.current;
+
   const [channel, setChannel] = useState("");
-  const [currentChannel, setCurrentChannel] = useState(null);
-  const [total, setTotal] = useState(0);
+  const [currentChannel, setCurrentChannel] = useState<string | null>(null);
   const [connectedUsers, setConnectedUsers] = useState(0);
   const [throwing, setThrowing] = useState(false);
-  const [toasts, setToasts] = useState([]);
-  const fileRef = useRef(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [flip, set] = useState(false);
-  const [progress, setProgress] = useState({});
-  const [size, setSize] = useState({});
-  const [filesBeingTransferred, setFilesBeingTransferred] = useState([]);
+  const [progress, setProgress] = useState<Record<string, string>>({});
+  const [size, setSize] = useState<
+    Record<string, { received: number; original: number }>
+  >({});
+  const [filesBeingTransferred, setFilesBeingTransferred] = useState<
+    TransferredFile[]
+  >([]);
   const [compressFiles, setCompressFiles] = useState(true);
   const [showFeaturePopup, setShowFeaturePopup] = useState(false);
-  const [sentFilesHistory, setSentFilesHistory] = useState([]);
-  const [receivedFilesHistory, setReceivedFilesHistory] = useState([]);
+  const [sentFilesHistory, setSentFilesHistory] = useState<FileHistory[]>([]);
+  const [receivedFilesHistory, setReceivedFilesHistory] = useState<
+    FileHistory[]
+  >([]);
   const [showHistory, setShowHistory] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const { isDarkMode, toggleTheme } = useContext(ThemeContext);
+  const { isDarkMode } = useContext(ThemeContext);
 
-  const [sizeLimit, setSizeLimit] = useState("5GB");
+  const [sizeLimit] = useState("5GB");
 
-  let buffers = {};
-  let uploading = false;
+  const buffersRef = useRef<
+    Record<
+      string,
+      {
+        chunks: ArrayBuffer[];
+        bytesReceived: number;
+        fileInfo: {
+          name: string;
+          type: string;
+          size: number;
+          compressed: boolean;
+        };
+      }
+    >
+  >({});
+  const uploadingRef = useRef(false);
 
-  const chunkPicker = (fileSize) => {
+  const chunkPicker = (fileSize: number) => {
     const MB = 1024 * 1024;
     if (fileSize < MB) return 64 * 1024; // 64KB for files < 1MB
     if (fileSize < 10 * MB) return 256 * 1024; // 256KB for files < 10MB
@@ -398,16 +495,6 @@ export const Home = memo((props) => {
     if (fileSize < 500 * MB) return 4 * MB; // 4MB for files < 500MB
     return 16 * MB; // 16MB for larger files
   };
-
-  const springProps = useSpring({
-    position: "relative",
-    width: "100%",
-    height: 20,
-    fontSize: "1em",
-    color: "#ED4B9E",
-    overflow: "hidden",
-    fontWeight: "bold",
-  });
 
   const words = [
     "Bluetooth",
@@ -436,21 +523,39 @@ export const Home = memo((props) => {
     localStorage.setItem("hasSeenMultiFileFeature", "true");
   };
 
+  const generateChannel = () => {
+    const newChannel = randomstring.generate({
+      length: 6,
+      charset: "alphanumeric",
+      capitalization: "uppercase",
+    });
+
+    setChannel(newChannel);
+  };
+
   useEffect(() => {
     generateChannel();
     // get query "channel" and set to state if exists
     const urlParams = new URLSearchParams(window.location.search);
-    const channel = urlParams.get("channel");
-    if (channel) {
-      setChannel(channel);
-      setCurrentChannel(channel);
+    const channelQuery = urlParams.get("channel");
+    if (channelQuery) {
+      setChannel(channelQuery);
+      setCurrentChannel(channelQuery);
     }
   }, []);
 
   useEffect(() => {
-    instance.listenOnInput(document.getElementById("file_input"));
+    const fileInput = document.getElementById("file_input");
+    if (fileInput) {
+      instance.listenOnInput(fileInput);
+    }
+
     instance.maxFileSize = calculateSize(sizeLimit);
-    instance.addEventListener("progress", (p) => {
+
+    const progressHandler = (p: {
+      bytesLoaded: number;
+      file: { id: string; size: number };
+    }) => {
       const percentage = ((p.bytesLoaded / p.file.size) * 100).toFixed(2);
       setProgress((prev) => ({
         ...prev,
@@ -461,18 +566,27 @@ export const Home = memo((props) => {
         ...prev,
         [p.file.id]: { received: p.bytesLoaded, original: p.file.size },
       }));
-    });
+    };
+    instance.addEventListener("progress", progressHandler);
 
-    instance.addEventListener("complete", function (event) {
-      uploading = false;
+    const completeHandler = function (event: {
+      file: {
+        id: string;
+        name: string;
+        size: number;
+        type: string;
+        meta?: { compressed?: boolean };
+      };
+    }) {
+      uploadingRef.current = false;
       addToast(
         "Upload File",
         `${event.file.name} uploaded successfully`,
-        "success"
+        "success",
       );
 
       // Add to sent files history
-      const sentFile = {
+      const sentFile: FileHistory = {
         id: event.file.id,
         name: event.file.name,
         size: event.file.size,
@@ -491,18 +605,33 @@ export const Home = memo((props) => {
       });
 
       setFilesBeingTransferred((prev) =>
-        prev.filter((file) => file.id !== event.file.id)
+        prev.filter((file) => file.id !== event.file.id),
       );
 
       if (Object.keys(progress).length === 0) {
         setThrowing(false);
       }
-      fileRef.current.value = null;
-    });
+      if (fileRef.current) fileRef.current.value = "";
+    };
+    instance.addEventListener("complete", completeHandler);
 
-    instance.addEventListener("start", function (event) {
+    const startHandler = function (event: {
+      file: {
+        id: string;
+        name: string;
+        size: number;
+        type: string;
+        meta: {
+          channel: string;
+          type: string;
+          size: number;
+          id: string;
+          compressed: boolean;
+        };
+      };
+    }) {
       addToast("Please wait!", `Throwing file ${event.file.name}...`, "info");
-      uploading = true;
+      uploadingRef.current = true;
       event.file.meta.channel = channel;
       event.file.meta.type = event.file.type;
       event.file.meta.size = event.file.size;
@@ -522,17 +651,19 @@ export const Home = memo((props) => {
           compressed: event.file.meta.compressed || false,
         },
       ]);
-    });
+    };
+    instance.addEventListener("start", startHandler);
 
-    instance.addEventListener("error", function (data) {
-      uploading = false;
+    const errorHandler = function (data: { code: number }) {
+      uploadingRef.current = false;
       if (data.code === 1) {
         addToast("Oops!", "File size exceed.", "danger");
         setProgress({});
         setThrowing(false);
-        fileRef.current.value = null;
+        if (fileRef.current) fileRef.current.value = "";
       }
-    });
+    };
+    instance.addEventListener("error", errorHandler);
 
     if (channel) {
       handleConnectChannel();
@@ -543,21 +674,27 @@ export const Home = memo((props) => {
     }
 
     return () => {
-      instance.destroy();
-      instance = null;
+      // Clean up event listeners to avoid duplicates on channel change
+      instance.removeEventListener("progress", progressHandler);
+      instance.removeEventListener("complete", completeHandler);
+      instance.removeEventListener("start", startHandler);
+      instance.removeEventListener("error", errorHandler);
     };
   }, [channel]);
 
   useEffect(() => {
-    socket.on("total", setTotal);
-  }, [total]);
-
-  useEffect(() => {
-    socket.on(channel, (data) => {
+    const handleFileChunk = (data: {
+      id: string;
+      name: string;
+      type: string;
+      size: number;
+      compressed: boolean;
+      file: ArrayBuffer;
+    }) => {
       const fileId = data.id;
-      if (!buffers[fileId]) {
+      if (!buffersRef.current[fileId]) {
         // Initialize buffer for this file
-        buffers[fileId] = {
+        buffersRef.current[fileId] = {
           chunks: [],
           bytesReceived: 0,
           fileInfo: {
@@ -583,16 +720,16 @@ export const Home = memo((props) => {
       }
 
       // Make sure buffer exists (defensive programming)
-      if (buffers[fileId]) {
+      const buffer = buffersRef.current[fileId];
+      if (buffer) {
         // Add chunk to buffer
-        buffers[fileId].chunks.push(data.file);
-        buffers[fileId].bytesReceived += data.file.byteLength;
+        buffer.chunks.push(data.file);
+        buffer.bytesReceived += data.file.byteLength;
 
         // Calculate percentage
-        const percentage = (
-          (buffers[fileId].bytesReceived / data.size) *
-          100
-        ).toFixed(2);
+        const percentage = ((buffer.bytesReceived / data.size) * 100).toFixed(
+          2,
+        );
 
         // Update progress
         setProgress((prev) => ({
@@ -604,21 +741,26 @@ export const Home = memo((props) => {
         setSize((prev) => ({
           ...prev,
           [fileId]: {
-            received: buffers[fileId]?.bytesReceived,
+            received: buffer.bytesReceived,
             original: data.size,
           },
         }));
 
         setThrowing(true);
       }
-    });
+    };
 
-    socket.on(`done-${channel}`, async (data) => {
+    socket.on(channel, handleFileChunk);
+
+    const handleDone = async (data: {
+      file_id: string;
+      file_name: string;
+      type: string;
+    }) => {
       const fileId = data.file_id;
+      const fileData = buffersRef.current[fileId];
 
-      if (buffers[fileId]) {
-        const fileData = buffers[fileId];
-
+      if (fileData) {
         console.log("## ", {
           compressed: fileData.fileInfo.compressed,
           chunks: fileData.chunks,
@@ -628,11 +770,11 @@ export const Home = memo((props) => {
         addToast(
           "Great!",
           `You received the file: ${data.file_name}`,
-          "success"
+          "success",
         );
 
         // Add to received files history
-        const receivedFile = {
+        const receivedFile: FileHistory = {
           id: fileId,
           name: data.file_name,
           size: fileData.fileInfo.size,
@@ -652,10 +794,12 @@ export const Home = memo((props) => {
         a.click();
         URL.revokeObjectURL(objectUrl);
 
-        window.navigator.vibrate(200);
+        if (window.navigator && window.navigator.vibrate) {
+          window.navigator.vibrate(200);
+        }
 
         // Clean up
-        delete buffers[fileId];
+        delete buffersRef.current[fileId];
 
         setProgress((prev) => {
           const updated = { ...prev };
@@ -664,83 +808,86 @@ export const Home = memo((props) => {
         });
 
         setFilesBeingTransferred((prev) =>
-          prev.filter((file) => file.id !== fileId)
+          prev.filter((file) => file.id !== fileId),
         );
 
         if (Object.keys(progress).length === 0) {
           setThrowing(false);
         }
       }
-    });
+    };
 
-    socket.on(`join-${channel}`, (room) => {
-      window.navigator.vibrate(200);
+    socket.on(`done-${channel}`, handleDone);
+
+    socket.on(`join-${channel}`, () => {
+      if (window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate(200);
+      }
       addToast("Great!", "A user connected with the channel.", "info");
-      // TODO: Play Notification Sound
     });
 
-    socket.on(`receiving-${channel}`, (data) => {
-      window.navigator.vibrate(200);
+    socket.on(`receiving-${channel}`, (data: { name: string }) => {
+      if (window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate(200);
+      }
       addToast("Please Wait", `Receiving file: ${data.name}...`, "info");
-      // TODO: Play Notification Sound
     });
 
-    socket.on(`channel-join-${channel}`, (data) => {
+    socket.on(`channel-join-${channel}`, (data: string) => {
       addToast("Great!", data, "success");
-      // TODO: Play Notification Sound
     });
 
-    socket.on(`connections-${channel}`, (count) => {
+    socket.on(`connections-${channel}`, (count: number) => {
       setConnectedUsers(count);
     });
 
-    document.onpaste = (evt) => {
-      const dT = evt.clipboardData || window.clipboardData;
-      const files = dT.files;
+    const handlePaste = (evt: ClipboardEvent) => {
+      const dT = evt.clipboardData;
+      const files = dT?.files;
       if (!files || files.length === 0) return;
 
-      if (uploading)
+      if (uploadingRef.current)
         return addToast(
           "Oops!",
           "Your files are currently uploading.",
-          "danger"
+          "danger",
         );
 
-      handleFiles(files);
+      handleFiles(Array.from(files));
+    };
+
+    document.addEventListener("paste", handlePaste);
+
+    return () => {
+      socket.off(channel, handleFileChunk);
+      socket.off(`done-${channel}`, handleDone);
+      socket.off(`join-${channel}`);
+      socket.off(`receiving-${channel}`);
+      socket.off(`channel-join-${channel}`);
+      socket.off(`connections-${channel}`);
+      document.removeEventListener("paste", handlePaste);
     };
   }, [channel]);
 
-  function calculateSize(fileSize) {
-    let size = parseFloat(fileSize);
-    let unit = fileSize.replace(size, "").trim().toLowerCase();
+  function calculateSize(fileSize: string) {
+    let sizeValue = parseFloat(fileSize);
+    let unit = fileSize.replace(sizeValue.toString(), "").trim().toLowerCase();
 
     switch (unit) {
       case "gb":
-        return size * 1024 * 1024 * 1024;
+        return sizeValue * 1024 * 1024 * 1024;
       case "mb":
-        return size * 1024 * 1024;
+        return sizeValue * 1024 * 1024;
       case "kb":
-        return size * 1024;
+        return sizeValue * 1024;
       case "b":
-        return size;
+        return sizeValue;
       default:
-        return "Invalid unit. Please use GB, MB, KB, or B.";
+        return 0;
     }
   }
 
-  const generateChannel = () => {
-    // Store the previous channel before generating a new one
-    const previousChannel = currentChannel;
-    const newChannel = randomstring.generate({
-      length: 6,
-      charset: "alphanumeric",
-      capitalization: "uppercase",
-    });
-
-    setChannel(newChannel);
-  };
-
-  const handleChange = (event) => {
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const newChannel = event.target.value.toUpperCase().slice(0, 6);
     setChannel(newChannel);
   };
@@ -764,33 +911,39 @@ export const Home = memo((props) => {
     setCurrentChannel(channel);
   };
 
-  const addToast = (title, description, variant) => {
-    const now = Date.now();
-    const randomToast = {
-      id: `id-${now}`,
-      title: title,
-      description,
-      type: variant,
-    };
-
-    setToasts([randomToast]);
-  };
-
-  const handleRemoveToast = (id) => {
-    setToasts((prevToasts) =>
-      prevToasts.filter((prevToast) => prevToast.id !== id)
+  const addToast = (title: string, description: string, variant: string) => {
+    const content = (
+      <span>
+        <strong>{title}</strong>: {description}
+      </span>
     );
+    switch (variant) {
+      case "success":
+        message.success(content);
+        break;
+      case "danger":
+        message.error(content);
+        break;
+      case "info":
+        message.info(content);
+        break;
+      case "warning":
+        message.warning(content);
+        break;
+      default:
+        message.info(content);
+    }
   };
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(channel).then((r) => {
+    navigator.clipboard.writeText(channel).then(() => {
       addToast("Copied!", "Channel copied to clipboard.", "success");
     });
   };
 
   const shareChannel = () => {
     const url = `${FRONTEND_URL}/?channel=${channel}`;
-    navigator.clipboard.writeText(url).then((r) => {
+    navigator.clipboard.writeText(url).then(() => {
       addToast("Copied!", "Channel URL copied to clipboard.", "success");
     });
     if (navigator.share) {
@@ -806,22 +959,18 @@ export const Home = memo((props) => {
       addToast(
         "Oops!",
         "Your browser does not support Web Share API.",
-        "danger"
+        "danger",
       );
     }
   };
 
-  const handleCompressToggle = (checked) => {
-    setCompressFiles(checked);
-  };
-
-  const handleFiles = async (fileList) => {
+  const handleFiles = async (fileList: File[]) => {
     if (compressFiles && fileList.length > 1) {
       try {
         addToast(
           "Compressing",
           `Compressing ${fileList.length} files...`,
-          "info"
+          "info",
         );
 
         // Create a new zip file
@@ -841,14 +990,21 @@ export const Home = memo((props) => {
         const zipFile = new File(
           [zipContent],
           `files_${new Date().toISOString().replace(/[:.]/g, "-")}.zip`,
-          { type: "application/zip" }
+          { type: "application/zip" },
         );
 
         // Add metadata to the file directly to avoid reference issues
-        const customZipFile = new File([zipFile], zipFile.name, {
+        interface CustomFile extends File {
+          meta?: {
+            compressed: boolean;
+            channel: string;
+          };
+        }
+
+        const customZipFile: CustomFile = new File([zipFile], zipFile.name, {
           type: zipFile.type,
           lastModified: zipFile.lastModified,
-        });
+        }) as CustomFile;
 
         // Set metadata that will be used later
         customZipFile.meta = {
@@ -868,20 +1024,20 @@ export const Home = memo((props) => {
     }
   };
 
-  const readFileAsArrayBuffer = (file) => {
+  const readFileAsArrayBuffer = (file: File): Promise<ArrayBuffer> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target.result);
+      reader.onload = (e) => resolve(e.target?.result as ArrayBuffer);
       reader.onerror = (e) => reject(e);
       reader.readAsArrayBuffer(file);
     });
   };
 
   const handleSendClick = () => {
-    fileRef.current.click();
+    if (fileRef.current) fileRef.current.click();
   };
 
-  const handleFileInputChange = (e) => {
+  const handleFileInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
@@ -913,7 +1069,9 @@ export const Home = memo((props) => {
                     <div
                       style={{
                         height: "4px",
-                        background: "#f0f0f0",
+                        background: isDarkMode
+                          ? "rgba(255, 255, 255, 0.1)"
+                          : "rgba(0, 0, 0, 0.1)",
                         borderRadius: "2px",
                         overflow: "hidden",
                       }}
@@ -922,7 +1080,7 @@ export const Home = memo((props) => {
                         style={{
                           width: `${progress[file.id]}%`,
                           height: "100%",
-                          background: "#ED4B9E",
+                          background: "#7C3AED",
                           transition: "width 0.2s",
                         }}
                       />
@@ -955,7 +1113,7 @@ export const Home = memo((props) => {
   };
 
   // Helper function to format file size
-  const formatFileSize = (bytes) => {
+  const formatFileSize = (bytes: number) => {
     if (bytes === 0) return "0 B";
     const k = 1024;
     const sizes = ["B", "KB", "MB", "GB"];
@@ -964,7 +1122,7 @@ export const Home = memo((props) => {
   };
 
   // Helper function to format time
-  const formatTime = (date) => {
+  const formatTime = (date: Date) => {
     return date.toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
@@ -973,10 +1131,10 @@ export const Home = memo((props) => {
   };
 
   // Helper function to trim long file names
-  const trimFileName = (fileName, maxLength = 20) => {
+  const trimFileName = (fileName: string, maxLength = 20) => {
     if (fileName.length <= maxLength) return fileName;
 
-    const extension = fileName.split(".").pop();
+    const extension = fileName.split(".").pop() || "";
     const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf("."));
 
     if (nameWithoutExt.length <= maxLength - extension.length - 4) {
@@ -985,7 +1143,7 @@ export const Home = memo((props) => {
 
     const trimmedName = nameWithoutExt.substring(
       0,
-      Math.max(5, maxLength - extension.length - 4)
+      Math.max(5, maxLength - extension.length - 4),
     );
     return `${trimmedName}....${nameWithoutExt.slice(-3)}.${extension}`;
   };
@@ -993,12 +1151,19 @@ export const Home = memo((props) => {
   // Render sent and received files history (inline version - shows recent 3 files)
   const renderFileHistory = () => {
     const allFiles = [
-      ...sentFilesHistory.map((file) => ({ ...file, type: "sent" })),
-      ...receivedFilesHistory.map((file) => ({ ...file, type: "received" })),
-    ].sort(
-      (a, b) =>
-        new Date(b.sentAt || b.receivedAt) - new Date(a.sentAt || a.receivedAt)
-    );
+      ...sentFilesHistory.map((file) => ({
+        ...file,
+        type_info: "sent" as const,
+      })),
+      ...receivedFilesHistory.map((file) => ({
+        ...file,
+        type_info: "received" as const,
+      })),
+    ].sort((a, b) => {
+      const dateA = new Date(a.sentAt || a.receivedAt!).getTime();
+      const dateB = new Date(b.sentAt || b.receivedAt!).getTime();
+      return dateB - dateA;
+    });
 
     if (allFiles.length === 0) {
       return (
@@ -1039,20 +1204,21 @@ export const Home = memo((props) => {
                 <Text
                   strong
                   style={{
-                    color: isDarkMode ? "#fff" : "#000",
+                    color: isDarkMode ? "#E2E8F0" : "#000",
                     fontSize: "13px",
                   }}
                 >
-                  {file.type === "sent" ? "📤" : "📥"}
+                  {file.type_info === "sent" ? "📤" : "📥"}
                   <span title={file.name} style={{ marginLeft: "4px" }}>
                     {trimFileName(file.name)}
                   </span>
                   {file.compressed && (
-                    <span style={{ color: "#ED4B9E", marginLeft: "4px" }}>
+                    <span style={{ color: "#7C3AED", marginLeft: "4px" }}>
                       (Compressed)
                     </span>
                   )}
                 </Text>
+
                 <div
                   style={{
                     display: "flex",
@@ -1064,20 +1230,20 @@ export const Home = memo((props) => {
                     small
                     style={{
                       fontSize: "11px",
-                      color: isDarkMode ? "#888" : "#666",
+                      color: isDarkMode ? "#94A3B8" : "#666",
                     }}
                   >
-                    {formatTime(file.sentAt || file.receivedAt)}
+                    {formatTime(new Date(file.sentAt || file.receivedAt!))}
                   </Text>
                   <Text
                     small
                     style={{
                       fontSize: "9px",
-                      color: file.type === "sent" ? "#52c41a" : "#1890ff",
+                      color: file.type_info === "sent" ? "#52c41a" : "#1890ff",
                       fontWeight: "bold",
                     }}
                   >
-                    {file.type === "sent" ? "SENT" : "RECEIVED"}
+                    {file.type_info === "sent" ? "SENT" : "RECEIVED"}
                   </Text>
                 </div>
               </div>
@@ -1132,11 +1298,12 @@ export const Home = memo((props) => {
                 onClick={() => setShowHistoryModal(true)}
                 style={{
                   padding: "0 4px",
-                  color: "#ED4B9E",
+                  color: "#7C3AED",
                   background: "transparent",
+                  fontWeight: "bold",
                 }}
               >
-                View all
+                See All
               </Button>
             </Text>
           </div>
@@ -1150,6 +1317,7 @@ export const Home = memo((props) => {
       <FeaturePopup
         visible={showFeaturePopup}
         onClose={handleFeaturePopupClose}
+        isDarkMode={isDarkMode}
       />
 
       <HistoryModal
@@ -1169,73 +1337,179 @@ export const Home = memo((props) => {
 
       <Row justify="center" style={{ margin: "20px" }}>
         <Col>
-          <ToastContainer toasts={toasts} onRemove={handleRemoveToast} />
-          <Card isWarning style={{ marginTop: "100px" }}>
-            <CardHeader>
-              <Heading>
-                Unleash the Power of Connectivity! <br />
-                Anytime, Anywhere.
-              </Heading>
-              <Space>
-                Transcending boundaries with
-                <animated.div style={springProps} scrollTop={scroll}>
-                  {words.map((word, i) => (
-                    <div
-                      key={`${word}_${i}`}
-                      style={{ width: "100%", height: 50, textAlign: "center" }}
-                    >
-                      {word}
-                    </div>
-                  ))}
-                </animated.div>
-              </Space>
+          {/* <ToastContainer toasts={toasts} onRemove={handleRemoveToast} /> */}
+          <Card style={{ marginTop: "80px", maxWidth: "600px" }}>
+            <CardHeader style={{ borderBottom: "none", paddingBottom: 0 }}>
+              <Title
+                level={1}
+                style={{
+                  marginBottom: 0,
+                  fontWeight: 800,
+                  letterSpacing: "-1.5px",
+                  fontSize: "36px",
+                }}
+              >
+                Instant P2P Transfer
+              </Title>
+              <Text
+                style={{
+                  opacity: 0.7,
+                  fontSize: "18px",
+                  display: "block",
+                  marginTop: "8px",
+                }}
+              >
+                Securely move files across the globe, instantly.
+              </Text>
             </CardHeader>
             <CardBody>
-              <Space direction="vertical" style={{ width: "100%" }}>
-                <Space style={{ display: "flex", alignItems: "flex-start" }}>
-                  <Text
-                    style={{ display: "flex", flexDirection: "row", gap: 2 }}
-                  >
-                    Channel: {channel}
-                    <div title="Copy to clipboard">
-                      <CopyIcon
-                        width={20}
-                        onClick={copyToClipboard}
-                        color="secondary"
-                      />
-                    </div>
-                    <div title="Share link">
-                      <ShareIcon
-                        style={{ marginBottom: 5 }}
-                        width={20}
-                        onClick={shareChannel}
-                        color="warning"
-                      />
-                    </div>
-                  </Text>
-                </Space>
-                <Space style={{ display: "flex", alignItems: "flex-start" }}>
-                  Max Limit: {sizeLimit}
-                </Space>
-
-                <Space>
-                  <Input
-                    scale="sm"
-                    onChange={handleChange}
-                    placeholder="Join an Existing Channel"
-                    value={channel}
+              <Space
+                direction="vertical"
+                style={{ width: "100%" }}
+                size="large"
+              >
+                <div
+                  style={{
+                    background: isDarkMode
+                      ? "rgba(255, 255, 255, 0.05)"
+                      : "rgba(124, 58, 237, 0.03)",
+                    padding: "32px",
+                    borderRadius: "24px",
+                    border: isDarkMode
+                      ? "1px solid rgba(255, 255, 255, 0.1)"
+                      : "1px solid rgba(124, 58, 237, 0.1)",
+                    position: "relative",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "-20px",
+                      right: "-20px",
+                      width: "100px",
+                      height: "100px",
+                      background:
+                        "radial-gradient(circle, rgba(244, 63, 94, 0.1) 0%, transparent 70%)",
+                      borderRadius: "50%",
+                    }}
                   />
-                  <Button
-                    onClick={generateChannel}
-                    scale="sm"
-                    variant="success"
+
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "16px",
+                    }}
                   >
-                    <RefreshIcon />
-                  </Button>
-                  <Button onClick={handleConnectChannel} scale="sm">
+                    <Text
+                      bold
+                      style={{
+                        fontSize: "12px",
+                        textTransform: "uppercase",
+                        letterSpacing: "2px",
+                        opacity: isDarkMode ? 0.5 : 0.7,
+                      }}
+                    >
+                      Active Channel
+                    </Text>
+                    <Space size="middle">
+                      <div title="Copy to clipboard">
+                        <CopyOutlined
+                          style={{
+                            fontSize: "20px",
+                            cursor: "pointer",
+                            color: "#7C3AED",
+                          }}
+                          onClick={copyToClipboard}
+                        />
+                      </div>
+                      <div title="Share link">
+                        <ShareAltOutlined
+                          style={{
+                            fontSize: "20px",
+                            cursor: "pointer",
+                            color: "#F43F5E",
+                          }}
+                          onClick={shareChannel}
+                        />
+                      </div>
+                    </Space>
+                  </div>
+                  <Title
+                    level={1}
+                    style={{
+                      margin: 0,
+                      color: "#F43F5E",
+                      fontFamily: "Space Grotesk",
+                      fontSize: "48px",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {channel}
+                  </Title>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr auto auto",
+                    gap: "12px",
+                    alignItems: "end",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "8px",
+                    }}
+                  >
+                    <Text
+                      small
+                      bold
+                      style={{
+                        opacity: isDarkMode ? 0.5 : 0.8,
+                        marginLeft: "4px",
+                      }}
+                    >
+                      JOIN CHANNEL
+                    </Text>
+                    <Input
+                      size="large"
+                      onChange={handleChange}
+                      placeholder="Enter 6-digit code"
+                      value={channel}
+                    />
+                  </div>
+                  <Tooltip title="Generate new random code">
+                    <Button
+                      onClick={generateChannel}
+                      size="large"
+                      variant="secondary"
+                      style={{
+                        height: "48px",
+                        width: "48px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: 0,
+                      }}
+                    >
+                      <ReloadOutlined />
+                    </Button>
+                  </Tooltip>
+                  <Button
+                    onClick={handleConnectChannel}
+                    size="large"
+                    variant="primary"
+                    style={{ height: "48px", padding: "0 24px" }}
+                  >
                     JOIN
                   </Button>
-                </Space>
+                </div>
+
                 <input
                   type="file"
                   ref={fileRef}
@@ -1244,11 +1518,14 @@ export const Home = memo((props) => {
                   hidden
                   onChange={handleFileInputChange}
                 />
-                <hr />
 
                 {renderFileTransferList()}
 
-                <Space>
+                <Space
+                  direction="vertical"
+                  align="center"
+                  style={{ width: "100%", padding: "20px 0" }}
+                >
                   <Popconfirm
                     title="Your files will be shared across the channel."
                     onConfirm={handleSendClick}
@@ -1256,19 +1533,37 @@ export const Home = memo((props) => {
                     cancelText="Cancel"
                   >
                     {throwing && (
-                      <div className="dots">
+                      <div className="dots" style={{ height: "60px" }}>
                         <div></div>
                         <div></div>
                         <div></div>
                       </div>
                     )}
                     {!throwing && (
-                      <Space direction="vertical">
-                        <Button variant="danger" isLoading={throwing}>
+                      <div style={{ textAlign: "center" }}>
+                        <Button
+                          variant="primary"
+                          size="large"
+                          loading={throwing}
+                          style={{
+                            height: "64px",
+                            fontSize: "18px",
+                            padding: "0 48px",
+                            borderRadius: "32px",
+                            marginBottom: "12px",
+                          }}
+                        >
                           SEND FILES
                         </Button>
-                        <Text>Or paste directly from Clipboard!</Text>
-                      </Space>
+                        <br />
+                        <Text style={{ opacity: 0.6, fontSize: "14px" }}>
+                          Or simply{" "}
+                          <Text bold style={{ color: "#F43F5E" }}>
+                            paste
+                          </Text>{" "}
+                          from your clipboard
+                        </Text>
+                      </div>
                     )}
                   </Popconfirm>
                 </Space>
@@ -1276,10 +1571,14 @@ export const Home = memo((props) => {
                 {/* File History Section */}
                 <div
                   style={{
-                    border: `1px solid ${isDarkMode ? "#333" : "#f0f0f0"}`,
-                    borderRadius: "8px",
-                    padding: "12px",
-                    background: isDarkMode ? "#2a2a2a" : "#fafbfc",
+                    border: isDarkMode
+                      ? `1px solid rgba(255, 255, 255, 0.05)`
+                      : `1px solid rgba(0, 0, 0, 0.05)`,
+                    borderRadius: "20px",
+                    padding: "20px",
+                    background: isDarkMode
+                      ? "rgba(255, 255, 255, 0.02)"
+                      : "rgba(0, 0, 0, 0.02)",
                   }}
                 >
                   <div
@@ -1287,28 +1586,28 @@ export const Home = memo((props) => {
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
-                      marginBottom: showHistory ? "12px" : "0",
+                      marginBottom: showHistory ? "16px" : "0",
                     }}
                   >
                     <div>
                       <Text
                         style={{
-                          fontWeight: "600",
-                          color: isDarkMode ? "#ffffff" : "#000000",
+                          fontWeight: "700",
+                          fontSize: "16px",
+                          color: isDarkMode ? "#E2E8F0" : "#0F172A",
                         }}
                       >
-                        📋 File History (
-                        {sentFilesHistory.length + receivedFilesHistory.length})
+                        File History
                       </Text>
                       <br />
                       <Text
                         small
                         style={{
-                          fontSize: "11px",
-                          color: isDarkMode ? "#888" : "#666",
+                          fontSize: "12px",
+                          opacity: isDarkMode ? 0.5 : 0.7,
                         }}
                       >
-                        📤 {sentFilesHistory.length} sent • 📥{" "}
+                        {sentFilesHistory.length} sent •{" "}
                         {receivedFilesHistory.length} received
                       </Text>
                     </div>
@@ -1316,93 +1615,64 @@ export const Home = memo((props) => {
                       {sentFilesHistory.length + receivedFilesHistory.length >
                         0 && (
                         <Button
-                          scale="sm"
-                          variant="tertiary"
+                          size="small"
+                          variant="secondary"
                           onClick={() => setShowHistory(!showHistory)}
                         >
                           {showHistory ? "Hide" : "Recent"}
                         </Button>
                       )}
                       <Button
-                        scale="sm"
+                        size="small"
                         variant="primary"
                         onClick={() => setShowHistoryModal(true)}
+                        style={{ padding: "0 16px" }}
                         disabled={
                           sentFilesHistory.length +
                             receivedFilesHistory.length ===
                           0
                         }
                       >
-                        View All
+                        Full History
                       </Button>
                     </Space>
                   </div>
 
                   {showHistory && (
-                    <div style={{ maxHeight: "200px", overflowY: "auto" }}>
-                      {renderFileHistory()}
-                    </div>
-                  )}
-
-                  {sentFilesHistory.length + receivedFilesHistory.length ===
-                    0 && (
-                    <Text
-                      small
+                    <div
                       style={{
-                        fontStyle: "italic",
-                        color: isDarkMode ? "#888" : "#666",
+                        maxHeight: "200px",
+                        overflowY: "auto",
+                        marginTop: "12px",
                       }}
                     >
-                      Your sent and received files will appear here during this
-                      session
-                    </Text>
+                      {renderFileHistory()}
+                    </div>
                   )}
                 </div>
 
                 <div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "flex-start",
+                    textAlign: "center",
+                    opacity: 0.4,
+                    color: "#E2E8F0",
                   }}
                 >
-                  <Text style={{ fontSize: 8, marginRight: 5 }}>Theme:</Text>
-                  <SunIcon
-                    width={15}
-                    color={isDarkMode ? "textDisabled" : "warning"}
-                  />
-                  <Switch
-                    checked={isDarkMode}
-                    onChange={toggleTheme}
-                    style={{ margin: "0 5px" }}
-                    size="small"
-                  />
-                  <MoonIcon
-                    width={15}
-                    color={isDarkMode ? "secondary" : "textDisabled"}
-                  />
-                </div>
-                <small style={{ fontSize: "0.5rem" }}>
-                  <div>Total files shared: {total}</div>
-                  <div>Connected users in channel: {connectedUsers}</div>
-                  <p style={{ marginBottom: 0 }}>
-                    throwmyfile.com @{new Date().getFullYear()}
-                  </p>
-                  <a href="/privacy-policy">Privacy Policy</a>
-                  <p>
-                    <a
-                      href="mailto:jammmg26@gmail.com"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      jammmg26@gmail.com
+                  <Text small>Users: {connectedUsers}</Text>
+                  <div style={{ fontSize: "10px", marginTop: "8px" }}>
+                    throwmyfile.com &copy; {new Date().getFullYear()} •{" "}
+                    <a href="/privacy-policy" style={{ color: "inherit" }}>
+                      Privacy
                     </a>
-                  </p>
-                </small>
+                  </div>
+                </div>
+
                 <Tooltip title="Rest easy! Your files travel securely, moving straight from your device to the recipient. We don't store any data on our servers.">
-                  <Link small color="secondary">
-                    Curious about your file's journey?
-                  </Link>
+                  <div style={{ textAlign: "center" }}>
+                    <Link style={{ fontSize: "12px", color: "#7C3AED" }}>
+                      Curious about your file's journey?
+                    </Link>
+                  </div>
                 </Tooltip>
               </Space>
             </CardBody>

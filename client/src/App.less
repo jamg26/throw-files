@@ -1,28 +1,127 @@
 @import "antd/dist/antd.less";
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:wght@400;500;700&display=swap');
 
-@font-family: -apple-system, BlinkMacSystemFont, Roboto, "Segoe UI", "Consolas",
-  "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji",
-  "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-//@primary-color: #389e0d;
-//@text-color: rgba(0, 0, 0, 0.8);
-//@error-color: #389e0d;
-//@link-color: #389e0d;;
+@font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+@secondary-font: 'DM Sans', sans-serif;
 
-body {
-  background-repeat: repeat;
-  background-size: cover;
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
-body.light-theme {
-  background-image: url("./media/scattered-forcefields.svg");
+body {
+  font-family: @font-family;
+  transition: background 0.5s ease, color 0.3s ease;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-attachment: fixed;
 }
 
 body.dark-theme {
-  background-image: url("./media/scattered-forcefields-dark.svg");
-  color: #f5f5f5;
+  background-color: #0F0F23;
+  color: #E2E8F0;
 
-  h2 {
-    color: #f5f5f5;
+  &::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background-image: 
+      radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+      radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+      radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+    pointer-events: none;
+  }
+
+  .ant-card {
+    background: rgba(30, 30, 50, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+    
+    &:hover {
+        border: 1px solid rgba(124, 58, 237, 0.3);
+        box-shadow: 0 0 20px rgba(124, 58, 237, 0.1);
+    }
+  }
+
+  .ant-typography {
+    color: #E2E8F0;
+  }
+
+  .ant-modal-content, .ant-modal-header {
+    background-color: #1E1E32 !important;
+    color: #E2E8F0 !important;
+  }
+
+  .ant-modal-title {
+    color: #E2E8F0 !important;
+  }
+
+  .ant-modal-close-x {
+    color: rgba(255, 255, 255, 0.45) !important;
+  }
+
+  .ant-list-item {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+}
+
+.ant-card {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 24px;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.ant-btn-primary {
+  background: linear-gradient(135deg, #7C3AED 0%, #F43F5E 100%);
+  border: none;
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+  
+  &:hover {
+    background: linear-gradient(135deg, #8B5CF6 0%, #FB7185 100%);
+    box-shadow: 0 8px 25px rgba(124, 58, 237, 0.5);
+  }
+}
+
+.ant-input {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #fff !important;
+  border-radius: 16px !important;
+  
+  &:focus {
+    border-color: #7C3AED !important;
+    box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2) !important;
+  }
+}
+
+.dots div {
+  background: linear-gradient(135deg, #7C3AED 0%, #F43F5E 100%);
+  box-shadow: 0 0 10px rgba(124, 58, 237, 0.5);
+}
+
+@keyframes mesh-animation {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.ant-btn {
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.02);
+  }
+  
+  &:active {
+    transform: scale(0.98);
   }
 }
 
@@ -38,7 +137,6 @@ body.dark-theme {
   width: 0.8em;
   height: 0.8em;
   border-radius: 50%;
-  background-color: #ed4b9e;
   animation: fade 0.8s ease-in-out alternate infinite;
 }
 

@@ -10,5 +10,9 @@ declare namespace NodeJS {
 }
 
 interface Window {
-  clipboardData: any;
+  clipboardData: DataTransfer | null;
+  ENV: {
+    REACT_APP_BACKEND_URL: string;
+    REACT_APP_FRONTEND_URL: string;
+  };
 }

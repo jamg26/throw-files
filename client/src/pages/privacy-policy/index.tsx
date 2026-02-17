@@ -1,10 +1,11 @@
 
 const PrivacyPolicy = () => {
     return (
-        <div style={{ margin: "10%" }}>
+        <div style={{ margin: "10%", color: "#E2E8F0" }}>
+        <h1 style={{ color: "#7C3AED" }}>Privacy Policy</h1>
         <p>At ThrowMyFile, we take your privacy seriously, and we are committed to protecting your personal information. This Privacy Policy explains how we collect, use, and disclose information when you use our application, which allows users to share files across devices using WebSocket.io. Please read this policy carefully to understand our practices regarding your personal data.</p>
 
-        <h2>1. Data Storage</h2>
+        <h2 style={{ color: "#A78BFA" }}>1. Data Storage</h2>
         
         <p>We do not store any of the files you share through the ThrowMyFile application. The files are transmitted directly from the sender to the receiver without being saved on any of our servers or databases.</p>
         

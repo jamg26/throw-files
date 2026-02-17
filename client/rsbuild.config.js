@@ -16,7 +16,7 @@ export default defineConfig({
     }),
     pluginNodePolyfill(),
   ],
-  source: {
+  resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
