@@ -65,7 +65,7 @@ const FRONTEND_URL =
   "http://localhost:3000";
 
 const socket: Socket = io(BACKEND_URL, {
-  transports: ["websocket"],
+  transports: ["polling", "websocket"],
   forceNew: true,
   extraHeaders: {
     "Bypass-Tunnel-Reminder": "true",

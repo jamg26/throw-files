@@ -1,0 +1,5 @@
+/manifest.json
+  Content-Type: application/manifest+json
+/service-worker.js
+  Content-Type: application/javascript
+  Cache-Control: no-cache

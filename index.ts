@@ -260,7 +260,8 @@ function getServerOptions() {
       callback: (err: string | null | undefined, success: boolean) => void,
     ) => {
       const origin = req.headers.origin;
-      callback(null, origin === backend);
+      // Allow requests with no origin (server-to-server) or matching frontend URL
+      callback(null, !origin || origin === backend);
     },
   };
 }
