@@ -1,5 +1,5 @@
-import { ReactNode } from 'react';
-import styled from 'styled-components';
+import { ReactNode } from "react";
+import styled from "styled-components";
 
 interface TooltipProps {
   title: ReactNode;
@@ -36,8 +36,8 @@ const Tip = styled.span`
   transform: translateX(-50%) translateY(0);
   background: rgba(17, 17, 38, 0.97);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #E2E8F0;
-  font-family: 'DM Sans', sans-serif;
+  color: #e2e8f0;
+  font-family: "DM Sans", sans-serif;
   font-size: 12px;
   line-height: 1.5;
   padding: 7px 10px;
@@ -49,12 +49,15 @@ const Tip = styled.span`
   pointer-events: none;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    visibility 0.15s ease;
   backdrop-filter: blur(8px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 
   &::after {
-    content: '';
+    content: "";
     position: absolute;
     top: 100%;
     left: 50%;

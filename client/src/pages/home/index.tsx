@@ -67,7 +67,7 @@ const FeaturePopup = ({ visible, onClose }: FeaturePopupProps) => {
     <Modal
       visible={visible}
       onClose={onClose}
-      width={400}
+      width={560}
     >
       <div
         style={{
@@ -327,7 +327,7 @@ const HistoryModal = ({
       width={700}
       footer={
         totalFiles > 0 ? (
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
             <Button variant="danger" onClick={onClearHistory}>
               Clear All History
             </Button>
