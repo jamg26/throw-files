@@ -1,27 +1,33 @@
-FROM node:20-alpine
+# ── Build stage ───────────────────────────────────────────────────────────────
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files first for better layer caching
+# Cache dependency layer separately from source
 COPY package*.json tsconfig.json ./
-
-# Install all dependencies (devDeps needed for TypeScript compilation)
 RUN npm install --include=dev
 
-# Copy backend source files only — frontend is deployed separately to Cloudflare Pages
+# Compile TypeScript → dist/
 COPY index.ts router.ts ./
 COPY @types/ ./@types/
-
-# Compile TypeScript → dist/
 RUN npx tsc
 
-# Prune dev dependencies to slim the final image
-RUN npm prune --production
+# ── Runtime stage ─────────────────────────────────────────────────────────────
+FROM node:20-alpine AS runtime
 
-EXPOSE 5000
+RUN addgroup -g 1000 app && adduser -u 1000 -G app -H -s /sbin/nologin -D app
+
+WORKDIR /app
+
+# Copy only compiled output and production deps from builder
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package*.json ./
+RUN npm install --omit=dev
 
 ENV NODE_ENV=production
 # SERVE_STATIC is intentionally NOT set — this container is API only.
 # The frontend is served by Cloudflare Pages at throwmyfile.com.
 
+USER app
+EXPOSE 5000
 CMD ["node", "dist/index.js"]
