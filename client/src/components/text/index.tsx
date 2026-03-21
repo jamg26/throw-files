@@ -1,48 +1,36 @@
-import { Typography } from 'antd';
-import { TextProps as AntTextProps } from 'antd/lib/typography/Text';
-import { CSSProperties, ReactNode } from 'react';
+import { CSSProperties, ReactNode, HTMLAttributes } from 'react';
 
-const { Text: AntText } = Typography;
-
-interface CustomTextProps extends AntTextProps {
-    small?: boolean;
-    bold?: boolean;
-    color?: string;
-    fontSize?: string;
-    children?: ReactNode;
-    mb?: string;
+interface TextProps extends HTMLAttributes<HTMLSpanElement> {
+  small?: boolean;
+  bold?: boolean;
+  strong?: boolean;
+  color?: string;
+  fontSize?: string;
+  mb?: string;
+  type?: 'secondary' | 'success' | 'warning' | 'danger';
+  children?: ReactNode;
 }
 
-export const Text = ({ small, bold, color, fontSize, children, mb, ...props }: CustomTextProps) => {
-    let style: CSSProperties = { ...props.style };
-    let type = props.type;
-    
-    if (small) {
-        style.fontSize = '12px';
-    }
-    if (fontSize) {
-        style.fontSize = fontSize;
-    }
-    if (mb) {
-        style.marginBottom = mb;
-    }
-    if (color) {
-        if (color === 'textSubtle' || color === 'secondary') {
-            type = 'secondary';
-        } else if (color === 'success') {
-            type = 'success';
-        } else if (color === 'warning') {
-            type = 'warning';
-        } else if (color === 'danger') {
-            type = 'danger';
-        } else {
-            style.color = color;
-        }
-    }
+export const Text = ({
+  small, bold, strong, color, fontSize, mb, type, children, style, ...props
+}: TextProps) => {
+  const s: CSSProperties = { color: '#E2E8F0', ...style };
 
-    return (
-        <AntText strong={bold} style={style} type={type} {...props}>
-            {children}
-        </AntText>
-    );
+  if (small) s.fontSize = '12px';
+  if (fontSize) s.fontSize = fontSize;
+  if (mb) s.marginBottom = mb;
+  if (bold || strong) s.fontWeight = 600;
+
+  if (color === 'textSubtle' || color === 'secondary' || color === 'textDisabled') {
+    s.color = '#94A3B8';
+  } else if (color) {
+    s.color = color;
+  }
+
+  if (type === 'secondary') s.color = '#94A3B8';
+  if (type === 'success')   s.color = '#22C55E';
+  if (type === 'warning')   s.color = '#F59E0B';
+  if (type === 'danger')    s.color = '#F43F5E';
+
+  return <span style={s} {...props}>{children}</span>;
 };

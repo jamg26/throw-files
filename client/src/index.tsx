@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
-import { useEffect, createContext } from "react";
+import { createContext } from "react";
 import App from "./App";
 import * as serviceWorker from "./serviceWorker";
 import { ThemeProvider } from "styled-components";
@@ -23,26 +23,12 @@ const dark = {
   }
 };
 
-const AppWithTheme = () => {
-  useEffect(() => {
-    document.body.className = "dark-theme";
-    localStorage.setItem("theme", "dark");
-  }, []);
-
-  return (
-    <ThemeContext.Provider value={{ isDarkMode: true, toggleTheme: () => {} }}>
-      <ThemeProvider theme={dark}>
-        <App />
-      </ThemeProvider>
-    </ThemeContext.Provider>
-  );
-};
-
 root.render(
-  <AppWithTheme />
+  <ThemeContext.Provider value={{ isDarkMode: true, toggleTheme: () => {} }}>
+    <ThemeProvider theme={dark}>
+      <App />
+    </ThemeProvider>
+  </ThemeContext.Provider>
 );
 
-// If you want your app to work offline and load faster, you can change
-// unregister() to register() below. Note this comes with some pitfalls.
-// Learn more about service workers: https://bit.ly/CRA-PWA
 serviceWorker.register();

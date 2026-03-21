@@ -1,47 +1,26 @@
-import { Typography } from 'antd';
-import { LinkProps as AntLinkProps } from 'antd/lib/typography/Link';
-import { CSSProperties, ReactNode } from 'react';
+import { AnchorHTMLAttributes, CSSProperties, ReactNode } from 'react';
 
-const { Link: AntLink } = Typography;
-
-interface CustomLinkProps extends AntLinkProps {
-    small?: boolean;
-    bold?: boolean;
-    color?: string;
-    fontSize?: string;
-    children?: ReactNode;
+interface LinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
+  small?: boolean;
+  bold?: boolean;
+  color?: string;
+  fontSize?: string;
+  children?: ReactNode;
 }
 
-export const Link = ({ small, bold, color, fontSize, children, ...props }: CustomLinkProps) => {
-    let style: CSSProperties = { ...props.style };
-    let type = props.type;
-    
-    if (small) {
-        style.fontSize = '12px';
-    }
-    if (fontSize) {
-        style.fontSize = fontSize;
-    }
-    // Map colors if needed, but Ant Link uses type='secondary' etc.
-    if (color) {
-        if (color === 'textSubtle' || color === 'secondary') {
-             // Ant Link doesn't have secondary type in the same way Text does?
-             // Actually it does: secondary, success, warning, danger
-            type = 'secondary';
-        } else if (color === 'success') {
-            type = 'success';
-        } else if (color === 'warning') {
-            type = 'warning';
-        } else if (color === 'danger') {
-            type = 'danger';
-        } else {
-            style.color = color;
-        }
-    }
+export const Link = ({ small, bold, color, fontSize, children, style, ...props }: LinkProps) => {
+  const s: CSSProperties = {
+    color: '#7C3AED',
+    textDecoration: 'none',
+    cursor: 'pointer',
+    transition: 'color 0.2s ease',
+    ...style,
+  };
 
-    return (
-        <AntLink strong={bold} style={style} type={type} {...props}>
-            {children}
-        </AntLink>
-    );
+  if (small) s.fontSize = '12px';
+  if (fontSize) s.fontSize = fontSize;
+  if (bold) s.fontWeight = 600;
+  if (color) s.color = color;
+
+  return <a style={s} {...props}>{children}</a>;
 };

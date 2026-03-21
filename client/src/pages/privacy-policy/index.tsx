@@ -1,34 +1,31 @@
-import { Row, Col, Space, Typography } from "antd";
-import { ArrowLeftOutlined, SafetyCertificateOutlined } from "@ant-design/icons";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { useHistory } from "react-router-dom";
 import { Button, Card, CardBody, Text } from "../../components";
 import styled from "styled-components";
-
-const { Title } = Typography;
 
 const PrivacyPolicy = () => {
   const history = useHistory();
 
   return (
     <PolicyContainer>
-      <Row justify="center" style={{ padding: "40px 20px" }}>
-        <Col xs={24} sm={22} md={18} lg={14} xl={12}>
+      <div style={{ display: "flex", justifyContent: "center", padding: "40px 20px" }}>
+        <div style={{ width: "100%", maxWidth: "640px" }}>
           <Card style={{ marginBottom: "40px" }}>
             <CardBody>
-              <Space direction="vertical" size="large" style={{ width: "100%" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "24px", width: "100%" }}>
                 <Button 
                   variant="text" 
                   onClick={() => history.push("/")}
                   style={{ padding: 0, height: "auto", display: "flex", alignItems: "center", gap: "8px", opacity: 0.7, color: "#E2E8F0" }}
                 >
-                  <ArrowLeftOutlined /> Back to Transfer
+                  <ArrowLeft size={16} /> Back to Transfer
                 </Button>
 
                 <HeaderSection>
-                  <SafetyCertificateOutlined style={{ fontSize: "48px", color: "#7C3AED", marginBottom: "16px" }} />
-                  <Title level={1} style={{ margin: 0, color: "#E2E8F0", letterSpacing: "-1px" }}>
+                  <ShieldCheck size={48} color="#7C3AED" style={{ marginBottom: "16px" }} />
+                  <h1 style={{ margin: 0, color: "#E2E8F0", letterSpacing: "-1px", fontFamily: "'Space Grotesk', sans-serif" }}>
                     Privacy Policy
-                  </Title>
+                  </h1>
                   <Text style={{ opacity: 0.6, color: "#94A3B8" }}>
                     Last Updated: February 17, 2026
                   </Text>
@@ -37,42 +34,42 @@ const PrivacyPolicy = () => {
                 <Divider />
 
                 <Section>
-                  <Title level={3} style={{ color: "#A78BFA" }}>Our Philosophy</Title>
+                  <h3 style={{ color: "#A78BFA", fontFamily: "'Space Grotesk', sans-serif" }}>Our Philosophy</h3>
                   <p>
                     ThrowMyFile was built on the principle of absolute privacy. We believe that your data belongs to you, and your transfers should remain between you and your recipient. Our architecture is designed to facilitate direct communication without ever seeing, storing, or processing your files.
                   </p>
                 </Section>
 
                 <Section>
-                  <Title level={4} style={{ color: "#E2E8F0" }}>1. Data Transmission (P2P)</Title>
+                  <h4 style={{ color: "#E2E8F0", fontFamily: "'Space Grotesk', sans-serif" }}>1. Data Transmission (P2P)</h4>
                   <p>
                     ThrowMyFile utilizes Peer-to-Peer (P2P) technology. Files are streamed directly from your device to the receiver's device. Our servers act merely as a "signaling" service to help devices find each other and establish a connection. Once the transfer begins, the data does not pass through any intermediate cloud storage.
                   </p>
                 </Section>
 
                 <Section>
-                  <Title level={4} style={{ color: "#E2E8F0" }}>2. Zero Data Storage</Title>
+                  <h4 style={{ color: "#E2E8F0", fontFamily: "'Space Grotesk', sans-serif" }}>2. Zero Data Storage</h4>
                   <p>
                     We do not maintain any databases. We do not store your files, metadata, filenames, or history on our servers. Your "Transfer History" is stored locally in your browser's session memory and is permanently cleared as soon as you close the tab or refresh the page.
                   </p>
                 </Section>
 
                 <Section>
-                  <Title level={4} style={{ color: "#E2E8F0" }}>3. Tracking & Cookies</Title>
+                  <h4 style={{ color: "#E2E8F0", fontFamily: "'Space Grotesk', sans-serif" }}>3. Tracking & Cookies</h4>
                   <p>
                     We value simplicity. ThrowMyFile does not use tracking cookies, analytics scripts, or third-party marketing pixels. We do not track your IP address or your geographical location.
                   </p>
                 </Section>
 
                 <Section>
-                  <Title level={4} style={{ color: "#E2E8F0" }}>4. Security</Title>
+                  <h4 style={{ color: "#E2E8F0", fontFamily: "'Space Grotesk', sans-serif" }}>4. Security</h4>
                   <p>
                     While we provide the infrastructure for direct transfers, we recommend using encrypted channels for sensitive data. We utilize modern Web APIs to ensure the most secure connection possible between peers.
                   </p>
                 </Section>
 
                 <Section>
-                  <Title level={4} style={{ color: "#E2E8F0" }}>5. Contact</Title>
+                  <h4 style={{ color: "#E2E8F0", fontFamily: "'Space Grotesk', sans-serif" }}>5. Contact</h4>
                   <p>
                     As an open-source project, we are committed to transparency. If you have questions about the underlying technology or our privacy practices, you can reach out via our GitHub repository or at <a href="mailto:jammmg26@gmail.com" style={{ color: "#7C3AED" }}>jammmg26@gmail.com</a>.
                   </p>
@@ -85,11 +82,11 @@ const PrivacyPolicy = () => {
                     ThrowMyFile &copy; {new Date().getFullYear()} • Secure. Direct. Private.
                   </Text>
                 </div>
-              </Space>
+              </div>
             </CardBody>
           </Card>
-        </Col>
-      </Row>
+        </div>
+      </div>
     </PolicyContainer>
   );
 };

@@ -3,26 +3,12 @@ import {
   useEffect,
   useRef,
   useState,
-  useContext,
   ChangeEvent,
 } from "react";
-import {
-  Row,
-  Col,
-  Space,
-  Tooltip,
-  Popconfirm,
-  List,
-  Modal,
-  Typography,
-  message,
-} from "antd";
-import {
-  ReloadOutlined,
-  CopyOutlined,
-  ShareAltOutlined,
-  GithubOutlined,
-} from "@ant-design/icons";
+import { RefreshCw, Copy, Share2, Github, ArrowUp, ArrowDown, History, Zap, File as FileIcon, Users } from 'lucide-react';
+import { toast } from "../../components/toast";
+import { Modal } from "../../components/modal";
+import { Tooltip } from "../../components/tooltip";
 import io from "socket.io-client";
 import type { Socket } from "socket.io-client";
 import randomstring from "randomstring";
@@ -38,10 +24,8 @@ import {
 import { useSpring, config } from "react-spring";
 import styled from "styled-components";
 import JSZip from "jszip";
-import { ThemeContext } from "../../index";
 import SocketIOFileUpload from "socketio-file-upload";
 
-const { Title } = Typography;
 
 // Get backend URL from environment variables
 const BACKEND_URL =
@@ -81,13 +65,9 @@ interface FeaturePopupProps {
 const FeaturePopup = ({ visible, onClose }: FeaturePopupProps) => {
   return (
     <Modal
-      title={null}
-      footer={null}
       visible={visible}
-      onCancel={onClose}
-      centered
+      onClose={onClose}
       width={400}
-      bodyStyle={{ padding: 0, borderRadius: "16px", overflow: "hidden" }}
     >
       <div
         style={{
@@ -124,9 +104,10 @@ const FeaturePopup = ({ visible, onClose }: FeaturePopupProps) => {
         />
 
         <div style={{ position: "relative", zIndex: 1 }}>
-          <Title level={3} style={{ color: "#7C3AED", marginBottom: "16px" }}>
-            New Feature Alert! 🎉
-          </Title>
+          <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", color: "#7C3AED", margin: 0, marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+            <Zap size={18} />
+            New Feature Alert!
+          </h3>
 
           <Text
             color="#E2E8F0"
@@ -241,15 +222,15 @@ const HistoryModal = ({
 
     if (files.length === 0) {
       return (
-        <div style={{ textAlign: "center", padding: "40px 20px" }}>
-          <Text color="textDisabled" style={{ fontSize: "16px" }}>
-            📁 No files {activeTab === "all" ? "transferred" : activeTab} yet in
-            this session
+        <div style={{ textAlign: "center", padding: "48px 20px" }}>
+          <FileIcon size={36} style={{ color: "rgba(255,255,255,0.18)", marginBottom: "14px", display: "block" }} />
+          <Text color="textDisabled" style={{ fontSize: "15px" }}>
+            No files {activeTab === "all" ? "transferred" : activeTab} yet in this session
           </Text>
           <br />
           <Text
             color="textDisabled"
-            style={{ fontSize: "14px", marginTop: "8px" }}
+            style={{ fontSize: "13px", marginTop: "8px", opacity: 0.6 }}
           >
             Your {activeTab === "all" ? "file transfers" : `${activeTab} files`}{" "}
             will appear here temporarily until page refresh
@@ -260,20 +241,8 @@ const HistoryModal = ({
 
     return (
       <div style={{ maxHeight: "400px", overflowY: "auto" }}>
-        <List
-          size="small"
-          dataSource={files}
-          renderItem={(file, index) => (
-            <List.Item
-              style={{
-                border: "none",
-                borderBottom:
-                  index < files.length - 1
-                    ? "1px solid rgba(255, 255, 255, 0.1)"
-                    : "none",
-              }}
-            >
-              <div style={{ width: "100%", padding: "8px 0" }}>
+        {files.map((file, index) => (
+          <div key={file.id} style={{ borderBottom: index < files.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none", padding: "8px 0" }}>
                 <div
                   style={{
                     display: "flex",
@@ -288,7 +257,10 @@ const HistoryModal = ({
                       color: "#E2E8F0",
                     }}
                   >
-                    {file.type_info === "sent" ? "📤" : "📥"} {file.name}{" "}
+                    <span style={{ color: file.type_info === "sent" ? "#22C55E" : "#3B82F6", fontSize: "12px" }}>
+                      {file.type_info === "sent" ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
+                    </span>{" "}
+                    {file.name}{" "}
                     {file.compressed && (
                       <span style={{ color: "#ED4B9E" }}>(Compressed)</span>
                     )}
@@ -328,16 +300,14 @@ const HistoryModal = ({
                   }}
                 >
                   <Text small color="textSubtle">
-                    📊 Size: {formatFileSize(file.size)}
+                    {formatFileSize(file.size)}
                   </Text>
                   <Text small color="textSubtle">
-                    🔗 Channel: {file.channel}
+                    {file.channel}
                   </Text>
                 </div>
-              </div>
-            </List.Item>
-          )}
-        />
+          </div>
+        ))}
       </div>
     );
   };
@@ -348,13 +318,12 @@ const HistoryModal = ({
     <Modal
       title={
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "18px" }}>📋</span>
+          <History size={16} color="#7C3AED" />
           <span>File Transfer History ({totalFiles})</span>
         </div>
       }
       visible={visible}
-      onCancel={onClose}
-      centered
+      onClose={onClose}
       width={700}
       footer={
         totalFiles > 0 ? (
@@ -374,41 +343,43 @@ const HistoryModal = ({
       }
     >
       {/* Tab buttons */}
-      <div style={{ marginBottom: "16px" }}>
-        <div style={{ display: "flex", gap: "0" }}>
-          {[
-            { key: "all", label: `All (${totalFiles})`, icon: "📋" },
-            {
-              key: "sent",
-              label: `Sent (${sentFilesHistory.length})`,
-              icon: "📤",
-            },
-            {
-              key: "received",
-              label: `Received (${receivedFilesHistory.length})`,
-              icon: "📥",
-            },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              style={{
-                padding: "8px 16px",
-                border: "none",
-                background: activeTab === tab.key ? "#7C3AED" : "transparent",
-                color: activeTab === tab.key ? "white" : "#A78BFA",
-                cursor: "pointer",
-                fontSize: "14px",
-                fontWeight: activeTab === tab.key ? "600" : "normal",
-                borderRadius: "8px 8px 0 0",
-                marginBottom: "-1px",
-                transition: "all 0.2s ease",
-              }}
-            >
-              {tab.icon} {tab.label}
-            </button>
-          ))}
-        </div>
+      <div style={{ marginBottom: "16px", display: "flex", gap: "4px", padding: "4px", background: "rgba(255,255,255,0.04)", borderRadius: "10px" }}>
+        {[
+          { key: "all", label: "All", count: totalFiles },
+          { key: "sent", label: "Sent", count: sentFilesHistory.length },
+          { key: "received", label: "Received", count: receivedFilesHistory.length },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            style={{
+              flex: 1,
+              padding: "7px 12px",
+              border: "none",
+              background: activeTab === tab.key ? "rgba(124, 58, 237, 0.85)" : "transparent",
+              color: activeTab === tab.key ? "white" : "rgba(255,255,255,0.45)",
+              cursor: "pointer",
+              fontSize: "13px",
+              fontWeight: activeTab === tab.key ? "600" : "400",
+              borderRadius: "7px",
+              transition: "all 0.2s ease",
+              fontFamily: "'Space Grotesk', sans-serif",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "6px",
+            }}
+          >
+            {tab.label}
+            <span style={{
+              background: activeTab === tab.key ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.07)",
+              padding: "1px 7px",
+              borderRadius: "12px",
+              fontSize: "11px",
+              fontWeight: "600",
+            }}>{tab.count}</span>
+          </button>
+        ))}
       </div>
 
       {renderHistoryContent()}
@@ -908,19 +879,19 @@ export const Home = memo(() => {
     );
     switch (variant) {
       case "success":
-        message.success(content);
+        toast.success(content);
         break;
       case "danger":
-        message.error(content);
+        toast.error(content);
         break;
       case "info":
-        message.info(content);
+        toast.info(content);
         break;
       case "warning":
-        message.warning(content);
+        toast.warning(content);
         break;
       default:
-        message.info(content);
+        toast.info(content);
     }
   };
 
@@ -1039,63 +1010,63 @@ export const Home = memo(() => {
     if (filesBeingTransferred.length === 0) return null;
 
     return (
-      <List
-        size="small"
-        bordered
-        dataSource={filesBeingTransferred}
-        renderItem={(file) => (
-          <List.Item>
-            <div style={{ width: "100%" }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <Text>
-                  {file.name} {file.compressed && "(Compressed)"}
-                </Text>
-                <Text>{file.receiving ? "Receiving" : "Sending"}</Text>
-              </div>
-              <div>
-                {progress[file.id] && (
-                  <div style={{ width: "100%" }}>
-                    <div
-                      style={{
-                        height: "4px",
-                        background: "rgba(255, 255, 255, 0.1)",
-                        borderRadius: "2px",
-                        overflow: "hidden",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: `${progress[file.id]}%`,
-                          height: "100%",
-                          background: "#7C3AED",
-                          transition: "width 0.2s",
-                        }}
-                      />
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        fontSize: "0.8em",
-                      }}
-                    >
-                      <Text>{progress[file.id]}%</Text>
-                      {size[file.id] && (
-                        <Text>
-                          {((size[file.id].received || 0) / 1048576).toFixed(2)}{" "}
-                          /{" "}
-                          {((size[file.id].original || 0) / 1048576).toFixed(2)}{" "}
-                          MB
-                        </Text>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        {filesBeingTransferred.map((file) => (
+          <div
+            key={file.id}
+            style={{
+              padding: "12px 14px",
+              background: "rgba(124, 58, 237, 0.07)",
+              border: "1px solid rgba(124, 58, 237, 0.18)",
+              borderRadius: "10px",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+              <Text style={{ fontSize: "13px", color: "#E2E8F0" }}>
+                {file.name}{file.compressed && <span style={{ color: "#A78BFA", fontSize: "11px", marginLeft: "6px" }}>(Compressed)</span>}
+              </Text>
+              <Text small style={{ fontSize: "11px", color: file.receiving ? "#3B82F6" : "#22C55E", fontWeight: "600" }}>
+                {file.receiving ? "Receiving" : "Sending"}
+              </Text>
             </div>
-          </List.Item>
-        )}
-      />
+            {progress[file.id] && (
+              <div style={{ width: "100%" }}>
+                <div
+                  style={{
+                    height: "3px",
+                    background: "rgba(255, 255, 255, 0.08)",
+                    borderRadius: "2px",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${progress[file.id]}%`,
+                      height: "100%",
+                      background: "linear-gradient(90deg, #7C3AED 0%, #F43F5E 100%)",
+                      transition: "width 0.3s ease",
+                    }}
+                  />
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginTop: "5px",
+                  }}
+                >
+                  <Text small style={{ fontSize: "11px", color: "#A78BFA" }}>{progress[file.id]}%</Text>
+                  {size[file.id] && (
+                    <Text small style={{ fontSize: "11px", color: "#94A3B8" }}>
+                      {((size[file.id].received || 0) / 1048576).toFixed(2)} / {((size[file.id].original || 0) / 1048576).toFixed(2)} MB
+                    </Text>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     );
   };
 
@@ -1167,24 +1138,22 @@ export const Home = memo(() => {
 
     return (
       <div>
-        <List
-          size="small"
-          bordered={false}
-          dataSource={recentFiles}
-          renderItem={(file, index) => (
-            <div
-              style={{
-                padding: "8px 12px",
-                border: `1px solid #333`,
-                borderRadius: "6px",
-                marginBottom: index < recentFiles.length - 1 ? "8px" : "0",
-                background: "#2a2a2a",
-              }}
-            >
+        {recentFiles.map((file, index) => (
+          <div
+            key={file.id || index}
+            style={{
+              padding: "10px 14px",
+              border: "1px solid rgba(255, 255, 255, 0.07)",
+              borderRadius: "10px",
+              marginBottom: index < recentFiles.length - 1 ? "6px" : "0",
+              background: "rgba(255, 255, 255, 0.04)",
+            }}
+          >
               <div
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
+                  alignItems: "flex-start",
                   marginBottom: "4px",
                 }}
               >
@@ -1193,14 +1162,19 @@ export const Home = memo(() => {
                   style={{
                     color: "#E2E8F0",
                     fontSize: "13px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
                   }}
                 >
-                  {file.type_info === "sent" ? "📤" : "📥"}
-                  <span title={file.name} style={{ marginLeft: "4px" }}>
+                  <span style={{ color: file.type_info === "sent" ? "#22C55E" : "#3B82F6", fontSize: "11px" }}>
+                    {file.type_info === "sent" ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
+                  </span>
+                  <span title={file.name}>
                     {trimFileName(file.name)}
                   </span>
                   {file.compressed && (
-                    <span style={{ color: "#7C3AED", marginLeft: "4px" }}>
+                    <span style={{ color: "#A78BFA", fontSize: "11px" }}>
                       (Compressed)
                     </span>
                   )}
@@ -1211,14 +1185,13 @@ export const Home = memo(() => {
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "flex-end",
+                    flexShrink: 0,
+                    marginLeft: "8px",
                   }}
                 >
                   <Text
                     small
-                    style={{
-                      fontSize: "11px",
-                      color: "#94A3B8",
-                    }}
+                    style={{ fontSize: "11px", color: "#94A3B8" }}
                   >
                     {formatTime(new Date(file.sentAt || file.receivedAt!))}
                   </Text>
@@ -1226,8 +1199,9 @@ export const Home = memo(() => {
                     small
                     style={{
                       fontSize: "9px",
-                      color: file.type_info === "sent" ? "#52c41a" : "#1890ff",
-                      fontWeight: "bold",
+                      color: file.type_info === "sent" ? "#22C55E" : "#3B82F6",
+                      fontWeight: "700",
+                      letterSpacing: "0.4px",
                     }}
                   >
                     {file.type_info === "sent" ? "SENT" : "RECEIVED"}
@@ -1238,56 +1212,41 @@ export const Home = memo(() => {
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
-                  fontSize: "11px",
+                  opacity: 0.5,
                 }}
               >
-                <Text
-                  small
-                  style={{
-                    color: "#888",
-                  }}
-                >
-                  Size: {formatFileSize(file.size)}
+                <Text small style={{ fontSize: "11px", color: "#94A3B8" }}>
+                  {formatFileSize(file.size)}
                 </Text>
-                <Text
-                  small
-                  style={{
-                    color: "#888",
-                  }}
-                >
-                  Channel: {file.channel}
+                <Text small style={{ fontSize: "11px", color: "#94A3B8" }}>
+                  {file.channel}
                 </Text>
               </div>
-            </div>
-          )}
-        />
+          </div>
+        ))}
         {allFiles.length > 3 && (
           <div
             style={{
               textAlign: "center",
-              padding: "8px",
-              background: "#333",
-              borderRadius: "4px",
-              marginTop: "8px",
-              border: `1px solid #444`,
+              padding: "8px 12px",
+              background: "rgba(255, 255, 255, 0.03)",
+              borderRadius: "8px",
+              marginTop: "6px",
+              border: "1px solid rgba(255, 255, 255, 0.06)",
             }}
           >
-            <Text
-              small
-              style={{
-                color: "#888",
-              }}
-            >
-              ... and {allFiles.length - 3} more files.
+            <Text small style={{ color: "#94A3B8" }}>
+              {allFiles.length - 3} more files.{" "}
               <Button
                 variant="text"
                 scale="sm"
                 onClick={() => setShowHistoryModal(true)}
                 style={{
                   padding: "0 4px",
-                  color: "#7C3AED",
+                  color: "#A78BFA",
                   background: "transparent",
-                  fontWeight: "bold",
+                  fontWeight: "600",
+                  height: "auto",
                 }}
               >
                 See All
@@ -1320,14 +1279,16 @@ export const Home = memo(() => {
         trimFileName={trimFileName}
       />
 
-      <Row justify="center" style={{ margin: "20px" }}>
-        <Col>
+      <div style={{ display: "flex", justifyContent: "center", margin: "20px" }}>
+        <div>
           {/* <ToastContainer toasts={toasts} onRemove={handleRemoveToast} /> */}
-          <Card style={{ marginTop: "80px", maxWidth: "600px" }}>
+          <Card style={{ marginTop: "20px", maxWidth: "600px" }}>
             <CardHeader style={{ borderBottom: "none", paddingBottom: 0 }}>
-              <Title
-                level={1}
+              <h1
                 style={{
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  color: "#E2E8F0",
+                  margin: 0,
                   marginBottom: 0,
                   fontWeight: 800,
                   letterSpacing: "-1.5px",
@@ -1335,7 +1296,7 @@ export const Home = memo(() => {
                 }}
               >
                 Instant P2P Transfer
-              </Title>
+              </h1>
               <Text
                 style={{
                   opacity: 0.7,
@@ -1348,11 +1309,7 @@ export const Home = memo(() => {
               </Text>
             </CardHeader>
             <CardBody>
-              <Space
-                direction="vertical"
-                style={{ width: "100%" }}
-                size="large"
-              >
+              <div style={{ display: "flex", flexDirection: "column", gap: "24px", width: "100%" }}>
                 <div
                   style={{
                     background: "rgba(255, 255, 255, 0.05)",
@@ -1395,11 +1352,11 @@ export const Home = memo(() => {
                     >
                       Active Channel
                     </Text>
-                    <Space size="middle">
+                    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
                       <div title="Copy to clipboard">
-                        <CopyOutlined
+                        <Copy
+                          size={20}
                           style={{
-                            fontSize: "20px",
                             cursor: "pointer",
                             color: "#7C3AED",
                           }}
@@ -1407,29 +1364,28 @@ export const Home = memo(() => {
                         />
                       </div>
                       <div title="Share link">
-                        <ShareAltOutlined
+                        <Share2
+                          size={20}
                           style={{
-                            fontSize: "20px",
                             cursor: "pointer",
                             color: "#F43F5E",
                           }}
                           onClick={shareChannel}
                         />
                       </div>
-                    </Space>
+                    </div>
                   </div>
-                  <Title
-                    level={1}
+                  <h1
                     style={{
-                      margin: 0,
+                      fontFamily: "'Space Grotesk', sans-serif",
                       color: "#F43F5E",
-                      fontFamily: "Space Grotesk",
+                      margin: 0,
                       fontSize: "48px",
                       fontWeight: 700,
                     }}
                   >
                     {channel}
-                  </Title>
+                  </h1>
                 </div>
 
                 <div
@@ -1458,10 +1414,10 @@ export const Home = memo(() => {
                       JOIN CHANNEL
                     </Text>
                     <Input
-                      size="large"
                       onChange={handleChange}
                       placeholder="Enter 6-digit code"
                       value={channel}
+                      style={{ height: "48px" }}
                     />
                   </div>
                   <Tooltip title="Generate new random code">
@@ -1478,7 +1434,7 @@ export const Home = memo(() => {
                         padding: 0,
                       }}
                     >
-                      <ReloadOutlined />
+                      <RefreshCw size={16} />
                     </Button>
                   </Tooltip>
                   <Button
@@ -1502,54 +1458,42 @@ export const Home = memo(() => {
 
                 {renderFileTransferList()}
 
-                <Space
-                  direction="vertical"
-                  align="center"
-                  style={{ width: "100%", padding: "20px 0" }}
-                >
-                  <Popconfirm
-                    title="Your files will be shared across the channel."
-                    onConfirm={() => {
-                      fileRef.current && fileRef.current.click();
-                    }}
-                    okText="Confirm"
-                    cancelText="Cancel"
-                  >
-                    {throwing && (
-                      <div className="dots" style={{ height: "60px" }}>
-                        <div></div>
-                        <div></div>
-                        <div></div>
-                      </div>
-                    )}
-                    {!throwing && (
-                      <div style={{ textAlign: "center" }}>
-                        <Button
-                          variant="primary"
-                          size="large"
-                          loading={throwing}
-                          style={{
-                            height: "64px",
-                            fontSize: "18px",
-                            padding: "0 48px",
-                            borderRadius: "32px",
-                            marginBottom: "12px",
-                          }}
-                        >
-                          SEND FILES
-                        </Button>
-                        <br />
-                        <Text style={{ opacity: 0.6, fontSize: "14px" }}>
-                          Or simply{" "}
-                          <Text bold style={{ color: "#F43F5E" }}>
-                            paste
-                          </Text>{" "}
-                          from your clipboard
-                        </Text>
-                      </div>
-                    )}
-                  </Popconfirm>
-                </Space>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", padding: "20px 0" }}>
+                  {throwing && (
+                    <div className="dots" style={{ height: "60px" }}>
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                    </div>
+                  )}
+                  {!throwing && (
+                    <div style={{ textAlign: "center" }}>
+                      <Button
+                        variant="primary"
+                        size="large"
+                        loading={throwing}
+                        onClick={handleSendClick}
+                        style={{
+                          height: "64px",
+                          fontSize: "18px",
+                          padding: "0 48px",
+                          borderRadius: "32px",
+                          marginBottom: "12px",
+                        }}
+                      >
+                        SEND FILES
+                      </Button>
+                      <br />
+                      <Text style={{ opacity: 0.6, fontSize: "14px" }}>
+                        Or simply{" "}
+                        <Text bold style={{ color: "#F43F5E" }}>
+                          paste
+                        </Text>{" "}
+                        from your clipboard
+                      </Text>
+                    </div>
+                  )}
+                </div>
 
                 {/* File History Section */}
                 <div
@@ -1590,7 +1534,7 @@ export const Home = memo(() => {
                         {receivedFilesHistory.length} received
                       </Text>
                     </div>
-                    <Space>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                       {sentFilesHistory.length + receivedFilesHistory.length >
                         0 && (
                         <Button
@@ -1614,7 +1558,7 @@ export const Home = memo(() => {
                       >
                         Full History
                       </Button>
-                    </Space>
+                    </div>
                   </div>
 
                   {showHistory && (
@@ -1633,46 +1577,49 @@ export const Home = memo(() => {
                 <div
                   style={{
                     textAlign: "center",
-                    opacity: 0.4,
-                    color: "#E2E8F0",
+                    borderTop: "1px solid rgba(255,255,255,0.05)",
+                    paddingTop: "16px",
                   }}
                 >
-                  <Text small>Users: {connectedUsers}</Text>
-                  <div style={{ fontSize: "10px", marginTop: "8px" }}>
-                    throwmyfile.com &copy; {new Date().getFullYear()} •{" "}
-                    <a href="/privacy-policy" style={{ color: "inherit" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", marginBottom: "10px" }}>
+                    <Users size={12} color="rgba(255,255,255,0.28)" />
+                    <Text small style={{ color: "rgba(255,255,255,0.38)", fontSize: "12px" }}>
+                      {connectedUsers} {connectedUsers === 1 ? "user" : "users"} online
+                    </Text>
+                  </div>
+                  <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.26)", display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", flexWrap: "wrap" }}>
+                    <span>throwmyfile.com &copy; {new Date().getFullYear()}</span>
+                    <a href="/privacy-policy" style={{ color: "inherit", textDecoration: "none" }}>
                       Privacy
                     </a>
-                    {" • "}
                     <a
                       href="https://github.com/jamg26/throw-files"
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ color: "inherit", verticalAlign: "middle" }}
+                      style={{ color: "inherit", display: "flex", alignItems: "center", gap: "4px" }}
                       title="View Source on GitHub"
                     >
-                      <GithubOutlined style={{ fontSize: "14px" }} />
+                      <Github size={12} />
                     </a>
                   </div>
+                  <Tooltip title="Rest easy! Your files travel securely, moving straight from your device to the recipient. We don't store any data on our servers.">
+                    <div style={{ marginTop: "12px" }}>
+                      <Link style={{ fontSize: "11px", color: "rgba(124, 58, 237, 0.6)" }}>
+                        Curious about your file's journey?
+                      </Link>
+                    </div>
+                  </Tooltip>
                 </div>
-
-                <Tooltip title="Rest easy! Your files travel securely, moving straight from your device to the recipient. We don't store any data on our servers.">
-                  <div style={{ textAlign: "center" }}>
-                    <Link style={{ fontSize: "12px", color: "#7C3AED" }}>
-                      Curious about your file's journey?
-                    </Link>
-                  </div>
-                </Tooltip>
-              </Space>
+              </div>
             </CardBody>
           </Card>
-          <div style={{ display: "flex", marginTop: 300 }}>
-            {/* <div style={{ width: 300, height: 50, background: '#000',  }}></div> */}
-          </div>
-        </Col>
-      </Row>
+        </div>
+      </div>
     </HomeComponent>
   );
 });
 
-const HomeComponent = styled.div``;
+const HomeComponent = styled.div`
+  min-height: 100vh;
+  padding-top: 64px;
+`;
