@@ -13,13 +13,41 @@ export class ThrowFilesContainer extends Container {
   };
 }
 
+const FRONTEND_ORIGIN = "https://throwmyfile.com";
+
+const CORS_HEADERS: Record<string, string> = {
+  "Access-Control-Allow-Origin": FRONTEND_ORIGIN,
+  "Access-Control-Allow-Credentials": "true",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
 interface Env {
   THROW_FILES_CONTAINER: DurableObjectNamespace;
 }
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    // Handle CORS preflight at the Worker level — ensures CORS headers are
+    // always present even if the container is cold-starting or returns an error.
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: CORS_HEADERS });
+    }
+
     const container = getContainer(env.THROW_FILES_CONTAINER, "main");
-    return container.fetch(request);
+    const response = await container.fetch(request);
+
+    // Clone the response and inject CORS headers so that error responses
+    // (500/503 during cold-start) don't appear to the browser as CORS failures.
+    const newHeaders = new Headers(response.headers);
+    for (const [key, value] of Object.entries(CORS_HEADERS)) {
+      newHeaders.set(key, value);
+    }
+
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: newHeaders,
+    });
   },
 };
