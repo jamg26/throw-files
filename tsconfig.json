@@ -1,17 +1,11 @@
 {
   "compilerOptions": {
     "target": "es2020",
-    "module": "commonjs",
+    "module": "es2022",
+    "moduleResolution": "bundler",
     "strict": true,
-    "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "outDir": "./dist",
-    "rootDir": "./",
-    "allowJs": true,
-    "resolveJsonModule": true,
-    "typeRoots": ["./node_modules/@types", "./@types"]
+    "types": ["@cloudflare/workers-types"]
   },
-  "include": ["**/*.ts", "**/*.js"],
-  "exclude": ["node_modules", "client", "worker"]
+  "include": ["worker/**/*.ts"]
 }
