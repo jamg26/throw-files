@@ -3,6 +3,7 @@ dotenv.config();
 import express, { Express, Request, Response } from "express";
 import http from "http";
 import morgan from "morgan";
+import cors from "cors";
 import siofu from "socketio-file-upload";
 import { Server, Socket } from "socket.io";
 import { join, resolve } from "path";
@@ -12,11 +13,17 @@ import router from "./router";
 const app: Express = express();
 const port = process.env.PORT || 5000;
 const server = http.createServer(app);
+const feUrl = process.env.FE_URL || "http://localhost:3000";
 const io = new Server(server, getServerOptions());
-const backend = process.env.FE_URL || "http://localhost:3000";
+
+const corsOptions = {
+  origin: [feUrl, "http://localhost:3000"],
+  credentials: true,
+};
 
 // App Setup
 app.use(morgan("tiny"));
+app.use(cors(corsOptions));
 app.use(express.json({ limit: "50mb" }));
 app.use(siofu.router);
 router(app);
@@ -251,18 +258,10 @@ function handleChannelJoin(socket: Socket, channel: string) {
 function getServerOptions() {
   return {
     cors: {
-      origin: true,
+      origin: [feUrl, "http://localhost:3000"],
       credentials: true,
     },
     maxHttpBufferSize: 73400320,
-    allowRequest: (
-      req: http.IncomingMessage,
-      callback: (err: string | null | undefined, success: boolean) => void,
-    ) => {
-      const origin = req.headers.origin;
-      // Allow requests with no origin (server-to-server) or matching frontend URL
-      callback(null, !origin || origin === backend);
-    },
   };
 }
 
