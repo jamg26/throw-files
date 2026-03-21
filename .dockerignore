@@ -1,12 +1,44 @@
+# Dependencies (reinstalled inside container)
 node_modules/
+
+# Frontend (deployed separately to Cloudflare Pages)
 client/
-design-system/
+
+# Generated outputs (rebuilt inside container)
 dist/
+
+# Never needed in container
+design-system/
 uploads/
 worker/
 images/
+.github/
+
+# VCS & IDE
 .git/
+.gitignore
 .idea/
+.vscode/
+
+# Local env files (config injected via container envVars)
+.env
+.env.*
+.env.dev
+.env.example
+
+# OS / editor noise
 .DS_Store
-.env*
+Thumbs.db
+*.swp
+*.swo
+
+# Docs
 *.md
+README*
+
+# Deployment scripts (not needed at runtime)
+deploy.sh
+attach-domain.sh
+wrangler.toml
+Dockerfile
+.dockerignore
