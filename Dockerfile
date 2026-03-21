@@ -18,7 +18,8 @@ WORKDIR /app
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package*.json ./
-RUN npm install --omit=dev
+RUN npm install --omit=dev && \
+    mkdir -p uploads && chown node:node uploads
 
 ENV NODE_ENV=production
 # SERVE_STATIC is intentionally NOT set — this container is API only.
