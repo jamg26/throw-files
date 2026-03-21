@@ -49,8 +49,15 @@ export default {
     const container = getContainer(env.THROW_FILES_CONTAINER, "main");
     const response = await container.fetch(request);
 
-    // Inject CORS headers into every response so that error responses
-    // (500/503 during cold-start) don't appear to the browser as CORS failures.
+    // WebSocket upgrades (101 Switching Protocols) must be returned as-is.
+    // Wrapping them in new Response() strips the WebSocket semantics and
+    // causes the upgrade to fail, forcing Socket.IO to stay on slow polling.
+    if (response.status === 101) {
+      return response;
+    }
+
+    // Inject CORS headers into every non-WebSocket response so that error
+    // responses (500/503 during cold-start) don't appear as CORS failures.
     const newHeaders = new Headers(response.headers);
     for (const [key, value] of Object.entries(corsHeaders)) {
       newHeaders.set(key, value);
