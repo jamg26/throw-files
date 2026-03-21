@@ -7,7 +7,7 @@ account_id      = "8846c8d2c9e982da3cee1c655ff8cb7c"
 [[containers]]
 class_name   = "ThrowFilesContainer"
 image        = "./Dockerfile"
-max_instances = 3
+max_instances = 1
 
 [durable_objects]
 bindings = [
