@@ -1,11 +1,16 @@
+import { memo, useEffect, useRef, useState, ChangeEvent } from "react";
 import {
-  memo,
-  useEffect,
-  useRef,
-  useState,
-  ChangeEvent,
-} from "react";
-import { RefreshCw, Copy, Share2, Github, ArrowUp, ArrowDown, History, Zap, File as FileIcon, Users } from 'lucide-react';
+  RefreshCw,
+  Copy,
+  Share2,
+  Github,
+  ArrowUp,
+  ArrowDown,
+  History,
+  Zap,
+  File as FileIcon,
+  Users,
+} from "lucide-react";
 import { toast } from "../../components/toast";
 import { Modal } from "../../components/modal";
 import { Tooltip } from "../../components/tooltip";
@@ -25,7 +30,6 @@ import { useSpring, config } from "react-spring";
 import styled from "styled-components";
 import JSZip from "jszip";
 import SocketIOFileUpload from "socketio-file-upload";
-
 
 // Get backend URL from environment variables
 const BACKEND_URL =
@@ -64,11 +68,7 @@ interface FeaturePopupProps {
 // Feature announcement popup
 const FeaturePopup = ({ visible, onClose }: FeaturePopupProps) => {
   return (
-    <Modal
-      visible={visible}
-      onClose={onClose}
-      width={560}
-    >
+    <Modal visible={visible} onClose={onClose} width={560}>
       <div
         style={{
           background: "linear-gradient(135deg, #1e1e32 0%, #2d1b4e 100%)",
@@ -104,7 +104,17 @@ const FeaturePopup = ({ visible, onClose }: FeaturePopupProps) => {
         />
 
         <div style={{ position: "relative", zIndex: 1 }}>
-          <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", color: "#7C3AED", margin: 0, marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+          <h3
+            style={{
+              fontFamily: "'Space Grotesk', sans-serif",
+              color: "#7C3AED",
+              margin: 0,
+              marginBottom: "16px",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
             <Zap size={18} />
             New Feature Alert!
           </h3>
@@ -223,9 +233,17 @@ const HistoryModal = ({
     if (files.length === 0) {
       return (
         <div style={{ textAlign: "center", padding: "48px 20px" }}>
-          <FileIcon size={36} style={{ color: "rgba(255,255,255,0.18)", marginBottom: "14px", display: "block" }} />
+          <FileIcon
+            size={36}
+            style={{
+              color: "rgba(255,255,255,0.18)",
+              marginBottom: "14px",
+              display: "block",
+            }}
+          />
           <Text color="textDisabled" style={{ fontSize: "15px" }}>
-            No files {activeTab === "all" ? "transferred" : activeTab} yet in this session
+            No files {activeTab === "all" ? "transferred" : activeTab} yet in
+            this session
           </Text>
           <br />
           <Text
@@ -242,70 +260,87 @@ const HistoryModal = ({
     return (
       <div style={{ maxHeight: "400px", overflowY: "auto" }}>
         {files.map((file, index) => (
-          <div key={file.id} style={{ borderBottom: index < files.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none", padding: "8px 0" }}>
-                <div
+          <div
+            key={file.id}
+            style={{
+              borderBottom:
+                index < files.length - 1
+                  ? "1px solid rgba(255,255,255,0.06)"
+                  : "none",
+              padding: "8px 0",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: "6px",
+              }}
+            >
+              <Text
+                strong
+                style={{
+                  fontSize: "14px",
+                  color: "#E2E8F0",
+                }}
+              >
+                <span
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginBottom: "6px",
-                  }}
-                >
-                  <Text
-                    strong
-                    style={{
-                      fontSize: "14px",
-                      color: "#E2E8F0",
-                    }}
-                  >
-                    <span style={{ color: file.type_info === "sent" ? "#22C55E" : "#3B82F6", fontSize: "12px" }}>
-                      {file.type_info === "sent" ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
-                    </span>{" "}
-                    {file.name}{" "}
-                    {file.compressed && (
-                      <span style={{ color: "#ED4B9E" }}>(Compressed)</span>
-                    )}
-                  </Text>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-end",
-                    }}
-                  >
-                    <Text
-                      small
-                      color="textSubtle"
-                      style={{ fontSize: "12px", color: "#94A3B8" }}
-                    >
-                      {formatTime(new Date(file.sentAt || file.receivedAt!))}
-                    </Text>
-                    <Text
-                      small
-                      style={{
-                        fontSize: "10px",
-                        color:
-                          file.type_info === "sent" ? "#22C55E" : "#3B82F6",
-                        fontWeight: "700",
-                      }}
-                    >
-                      {file.type_info === "sent" ? "SENT" : "RECEIVED"}
-                    </Text>
-                  </div>
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
+                    color: file.type_info === "sent" ? "#22C55E" : "#3B82F6",
                     fontSize: "12px",
                   }}
                 >
-                  <Text small color="textSubtle">
-                    {formatFileSize(file.size)}
-                  </Text>
-                  <Text small color="textSubtle">
-                    {file.channel}
-                  </Text>
-                </div>
+                  {file.type_info === "sent" ? (
+                    <ArrowUp size={11} />
+                  ) : (
+                    <ArrowDown size={11} />
+                  )}
+                </span>{" "}
+                {file.name}{" "}
+                {file.compressed && (
+                  <span style={{ color: "#ED4B9E" }}>(Compressed)</span>
+                )}
+              </Text>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-end",
+                }}
+              >
+                <Text
+                  small
+                  color="textSubtle"
+                  style={{ fontSize: "12px", color: "#94A3B8" }}
+                >
+                  {formatTime(new Date(file.sentAt || file.receivedAt!))}
+                </Text>
+                <Text
+                  small
+                  style={{
+                    fontSize: "10px",
+                    color: file.type_info === "sent" ? "#22C55E" : "#3B82F6",
+                    fontWeight: "700",
+                  }}
+                >
+                  {file.type_info === "sent" ? "SENT" : "RECEIVED"}
+                </Text>
+              </div>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "12px",
+              }}
+            >
+              <Text small color="textSubtle">
+                {formatFileSize(file.size)}
+              </Text>
+              <Text small color="textSubtle">
+                {file.channel}
+              </Text>
+            </div>
           </div>
         ))}
       </div>
@@ -327,7 +362,13 @@ const HistoryModal = ({
       width={700}
       footer={
         totalFiles > 0 ? (
-          <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: "12px",
+            }}
+          >
             <Button variant="danger" onClick={onClearHistory}>
               Clear All History
             </Button>
@@ -343,11 +384,24 @@ const HistoryModal = ({
       }
     >
       {/* Tab buttons */}
-      <div style={{ marginBottom: "16px", display: "flex", gap: "4px", padding: "4px", background: "rgba(255,255,255,0.04)", borderRadius: "10px" }}>
+      <div
+        style={{
+          marginBottom: "16px",
+          display: "flex",
+          gap: "4px",
+          padding: "4px",
+          background: "rgba(255,255,255,0.04)",
+          borderRadius: "10px",
+        }}
+      >
         {[
           { key: "all", label: "All", count: totalFiles },
           { key: "sent", label: "Sent", count: sentFilesHistory.length },
-          { key: "received", label: "Received", count: receivedFilesHistory.length },
+          {
+            key: "received",
+            label: "Received",
+            count: receivedFilesHistory.length,
+          },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -356,7 +410,10 @@ const HistoryModal = ({
               flex: 1,
               padding: "7px 12px",
               border: "none",
-              background: activeTab === tab.key ? "rgba(124, 58, 237, 0.85)" : "transparent",
+              background:
+                activeTab === tab.key
+                  ? "rgba(124, 58, 237, 0.85)"
+                  : "transparent",
               color: activeTab === tab.key ? "white" : "rgba(255,255,255,0.45)",
               cursor: "pointer",
               fontSize: "13px",
@@ -371,13 +428,20 @@ const HistoryModal = ({
             }}
           >
             {tab.label}
-            <span style={{
-              background: activeTab === tab.key ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.07)",
-              padding: "1px 7px",
-              borderRadius: "12px",
-              fontSize: "11px",
-              fontWeight: "600",
-            }}>{tab.count}</span>
+            <span
+              style={{
+                background:
+                  activeTab === tab.key
+                    ? "rgba(255,255,255,0.22)"
+                    : "rgba(255,255,255,0.07)",
+                padding: "1px 7px",
+                borderRadius: "12px",
+                fontSize: "11px",
+                fontWeight: "600",
+              }}
+            >
+              {tab.count}
+            </span>
           </button>
         ))}
       </div>
@@ -1021,11 +1085,36 @@ export const Home = memo(() => {
               borderRadius: "10px",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "8px",
+              }}
+            >
               <Text style={{ fontSize: "13px", color: "#E2E8F0" }}>
-                {file.name}{file.compressed && <span style={{ color: "#A78BFA", fontSize: "11px", marginLeft: "6px" }}>(Compressed)</span>}
+                {file.name}
+                {file.compressed && (
+                  <span
+                    style={{
+                      color: "#A78BFA",
+                      fontSize: "11px",
+                      marginLeft: "6px",
+                    }}
+                  >
+                    (Compressed)
+                  </span>
+                )}
               </Text>
-              <Text small style={{ fontSize: "11px", color: file.receiving ? "#3B82F6" : "#22C55E", fontWeight: "600" }}>
+              <Text
+                small
+                style={{
+                  fontSize: "11px",
+                  color: file.receiving ? "#3B82F6" : "#22C55E",
+                  fontWeight: "600",
+                }}
+              >
                 {file.receiving ? "Receiving" : "Sending"}
               </Text>
             </div>
@@ -1043,7 +1132,8 @@ export const Home = memo(() => {
                     style={{
                       width: `${progress[file.id]}%`,
                       height: "100%",
-                      background: "linear-gradient(90deg, #7C3AED 0%, #F43F5E 100%)",
+                      background:
+                        "linear-gradient(90deg, #7C3AED 0%, #F43F5E 100%)",
                       transition: "width 0.3s ease",
                     }}
                   />
@@ -1055,10 +1145,13 @@ export const Home = memo(() => {
                     marginTop: "5px",
                   }}
                 >
-                  <Text small style={{ fontSize: "11px", color: "#A78BFA" }}>{progress[file.id]}%</Text>
+                  <Text small style={{ fontSize: "11px", color: "#A78BFA" }}>
+                    {progress[file.id]}%
+                  </Text>
                   {size[file.id] && (
                     <Text small style={{ fontSize: "11px", color: "#94A3B8" }}>
-                      {((size[file.id].received || 0) / 1048576).toFixed(2)} / {((size[file.id].original || 0) / 1048576).toFixed(2)} MB
+                      {((size[file.id].received || 0) / 1048576).toFixed(2)} /{" "}
+                      {((size[file.id].original || 0) / 1048576).toFixed(2)} MB
                     </Text>
                   )}
                 </div>
@@ -1149,79 +1242,83 @@ export const Home = memo(() => {
               background: "rgba(255, 255, 255, 0.04)",
             }}
           >
-              <div
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                marginBottom: "4px",
+              }}
+            >
+              <Text
+                strong
                 style={{
+                  color: "#E2E8F0",
+                  fontSize: "13px",
                   display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  marginBottom: "4px",
+                  alignItems: "center",
+                  gap: "6px",
                 }}
               >
-                <Text
-                  strong
+                <span
                   style={{
-                    color: "#E2E8F0",
-                    fontSize: "13px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
+                    color: file.type_info === "sent" ? "#22C55E" : "#3B82F6",
+                    fontSize: "11px",
                   }}
                 >
-                  <span style={{ color: file.type_info === "sent" ? "#22C55E" : "#3B82F6", fontSize: "11px" }}>
-                    {file.type_info === "sent" ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
-                  </span>
-                  <span title={file.name}>
-                    {trimFileName(file.name)}
-                  </span>
-                  {file.compressed && (
-                    <span style={{ color: "#A78BFA", fontSize: "11px" }}>
-                      (Compressed)
-                    </span>
+                  {file.type_info === "sent" ? (
+                    <ArrowUp size={11} />
+                  ) : (
+                    <ArrowDown size={11} />
                   )}
-                </Text>
+                </span>
+                <span title={file.name}>{trimFileName(file.name)}</span>
+                {file.compressed && (
+                  <span style={{ color: "#A78BFA", fontSize: "11px" }}>
+                    (Compressed)
+                  </span>
+                )}
+              </Text>
 
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "flex-end",
-                    flexShrink: 0,
-                    marginLeft: "8px",
-                  }}
-                >
-                  <Text
-                    small
-                    style={{ fontSize: "11px", color: "#94A3B8" }}
-                  >
-                    {formatTime(new Date(file.sentAt || file.receivedAt!))}
-                  </Text>
-                  <Text
-                    small
-                    style={{
-                      fontSize: "9px",
-                      color: file.type_info === "sent" ? "#22C55E" : "#3B82F6",
-                      fontWeight: "700",
-                      letterSpacing: "0.4px",
-                    }}
-                  >
-                    {file.type_info === "sent" ? "SENT" : "RECEIVED"}
-                  </Text>
-                </div>
-              </div>
               <div
                 style={{
                   display: "flex",
-                  justifyContent: "space-between",
-                  opacity: 0.5,
+                  flexDirection: "column",
+                  alignItems: "flex-end",
+                  flexShrink: 0,
+                  marginLeft: "8px",
                 }}
               >
                 <Text small style={{ fontSize: "11px", color: "#94A3B8" }}>
-                  {formatFileSize(file.size)}
+                  {formatTime(new Date(file.sentAt || file.receivedAt!))}
                 </Text>
-                <Text small style={{ fontSize: "11px", color: "#94A3B8" }}>
-                  {file.channel}
+                <Text
+                  small
+                  style={{
+                    fontSize: "9px",
+                    color: file.type_info === "sent" ? "#22C55E" : "#3B82F6",
+                    fontWeight: "700",
+                    letterSpacing: "0.4px",
+                  }}
+                >
+                  {file.type_info === "sent" ? "SENT" : "RECEIVED"}
                 </Text>
               </div>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                opacity: 0.5,
+              }}
+            >
+              <Text small style={{ fontSize: "11px", color: "#94A3B8" }}>
+                {formatFileSize(file.size)}
+              </Text>
+              <Text small style={{ fontSize: "11px", color: "#94A3B8" }}>
+                {file.channel}
+              </Text>
+            </div>
           </div>
         ))}
         {allFiles.length > 3 && (
@@ -1279,7 +1376,9 @@ export const Home = memo(() => {
         trimFileName={trimFileName}
       />
 
-      <div style={{ display: "flex", justifyContent: "center", margin: "20px" }}>
+      <div
+        style={{ display: "flex", justifyContent: "center", margin: "20px" }}
+      >
         <div>
           {/* <ToastContainer toasts={toasts} onRemove={handleRemoveToast} /> */}
           <Card style={{ marginTop: "20px", maxWidth: "600px" }}>
@@ -1309,7 +1408,14 @@ export const Home = memo(() => {
               </Text>
             </CardHeader>
             <CardBody>
-              <div style={{ display: "flex", flexDirection: "column", gap: "24px", width: "100%" }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "24px",
+                  width: "100%",
+                }}
+              >
                 <div
                   style={{
                     background: "rgba(255, 255, 255, 0.05)",
@@ -1352,7 +1458,13 @@ export const Home = memo(() => {
                     >
                       Active Channel
                     </Text>
-                    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "16px",
+                      }}
+                    >
                       <div title="Copy to clipboard">
                         <Copy
                           size={20}
@@ -1458,7 +1570,15 @@ export const Home = memo(() => {
 
                 {renderFileTransferList()}
 
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", padding: "20px 0" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    width: "100%",
+                    padding: "20px 0",
+                  }}
+                >
                   {throwing && (
                     <div className="dots" style={{ height: "60px" }}>
                       <div></div>
@@ -1534,7 +1654,13 @@ export const Home = memo(() => {
                         {receivedFilesHistory.length} received
                       </Text>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                    >
                       {sentFilesHistory.length + receivedFilesHistory.length >
                         0 && (
                         <Button
@@ -1581,22 +1707,57 @@ export const Home = memo(() => {
                     paddingTop: "16px",
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", marginBottom: "10px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "6px",
+                      marginBottom: "10px",
+                    }}
+                  >
                     <Users size={12} color="rgba(255,255,255,0.28)" />
-                    <Text small style={{ color: "rgba(255,255,255,0.38)", fontSize: "12px" }}>
-                      {connectedUsers} {connectedUsers === 1 ? "user" : "users"} online
+                    <Text
+                      small
+                      style={{
+                        color: "rgba(255,255,255,0.38)",
+                        fontSize: "12px",
+                      }}
+                    >
+                      {connectedUsers} {connectedUsers === 1 ? "user" : "users"}{" "}
+                      online in this channel
                     </Text>
                   </div>
-                  <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.26)", display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", flexWrap: "wrap" }}>
-                    <span>throwmyfile.com &copy; {new Date().getFullYear()}</span>
-                    <a href="/privacy-policy" style={{ color: "inherit", textDecoration: "none" }}>
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      color: "rgba(255,255,255,0.26)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "16px",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <span>
+                      throwmyfile.com &copy; {new Date().getFullYear()}
+                    </span>
+                    <a
+                      href="/privacy-policy"
+                      style={{ color: "inherit", textDecoration: "none" }}
+                    >
                       Privacy
                     </a>
                     <a
                       href="https://github.com/jamg26/throw-files"
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ color: "inherit", display: "flex", alignItems: "center", gap: "4px" }}
+                      style={{
+                        color: "inherit",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                      }}
                       title="View Source on GitHub"
                     >
                       <Github size={12} />
@@ -1604,7 +1765,12 @@ export const Home = memo(() => {
                   </div>
                   <Tooltip title="Rest easy! Your files travel securely, moving straight from your device to the recipient. We don't store any data on our servers.">
                     <div style={{ marginTop: "12px" }}>
-                      <Link style={{ fontSize: "11px", color: "rgba(124, 58, 237, 0.6)" }}>
+                      <Link
+                        style={{
+                          fontSize: "11px",
+                          color: "rgba(124, 58, 237, 0.6)",
+                        }}
+                      >
                         Curious about your file's journey?
                       </Link>
                     </div>
