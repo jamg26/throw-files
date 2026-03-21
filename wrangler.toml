@@ -3,20 +3,19 @@ main            = "worker/index.ts"
 compatibility_date = "2025-06-01"
 account_id      = "8846c8d2c9e982da3cee1c655ff8cb7c"
 
-
-[[containers]]
-class_name   = "ThrowFilesContainer"
-image        = "./Dockerfile"
-max_instances = 1
-
 [durable_objects]
 bindings = [
-  { name = "THROW_FILES_CONTAINER", class_name = "ThrowFilesContainer" }
+  { name = "THROW_FILES_CHANNEL", class_name = "ThrowFilesChannel" }
 ]
 
 [[migrations]]
 tag               = "v1"
 new_sqlite_classes = ["ThrowFilesContainer"]
+
+[[migrations]]
+tag         = "v2"
+new_classes = ["ThrowFilesChannel"]
+deleted_classes = ["ThrowFilesContainer"]
 
 [observability]
 enabled = false

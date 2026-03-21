@@ -37,7 +37,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: 8846c8d2c9e982da3cee1c655ff8cb7c
 
   deploy-backend:
-    name: Deploy Backend (Container + Worker)
+    name: Deploy Backend (Durable Object + Worker)
     runs-on: ubuntu-latest
 
     steps:
@@ -49,10 +49,10 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install backend dependencies
-        run: npm install --include=dev
+      - name: Install dependencies
+        run: npm install
 
-      - name: Deploy Worker + Container to Cloudflare (api.throwmyfile.com)
+      - name: Deploy Worker to Cloudflare (api.throwmyfile.com)
         run: npx wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

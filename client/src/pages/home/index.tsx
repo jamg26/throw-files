@@ -14,8 +14,7 @@ import {
 import { toast } from "../../components/toast";
 import { Modal } from "../../components/modal";
 import { Tooltip } from "../../components/tooltip";
-import io from "socket.io-client";
-import type { Socket } from "socket.io-client";
+import { socket } from "../../utils/throw-socket";
 import randomstring from "randomstring";
 import {
   Button,
@@ -29,18 +28,10 @@ import {
 import { useSpring, config } from "react-spring";
 import styled from "styled-components";
 import JSZip from "jszip";
-import SocketIOFileUpload from "socketio-file-upload";
+import ThrowFileUpload from "../../utils/throw-file-upload";
 
-// Get backend URL from environment variables
-const BACKEND_URL =
-  // Try to access environment variables in different formats for compatibility
-  (typeof process !== "undefined" &&
-    process.env &&
-    process.env.REACT_APP_BACKEND_URL) ||
-  (typeof window !== "undefined" &&
-    (window as any).ENV &&
-    (window as any).ENV.REACT_APP_BACKEND_URL) ||
-  "http://localhost:5000";
+// BACKEND_URL and socket connection are now managed in throw-socket.ts.
+// The singleton `socket` is imported above.
 
 // Get frontend URL from environment variables
 const FRONTEND_URL =
@@ -52,13 +43,6 @@ const FRONTEND_URL =
     (window as any).ENV.REACT_APP_FRONTEND_URL) ||
   "http://localhost:3000";
 
-const socket: Socket = io(BACKEND_URL, {
-  transports: ["polling", "websocket"],
-  forceNew: true,
-  extraHeaders: {
-    "Bypass-Tunnel-Reminder": "true",
-  },
-});
 
 interface FeaturePopupProps {
   visible: boolean;
@@ -462,10 +446,10 @@ interface TransferredFile {
 
 export const Home = memo(() => {
   // Use a ref to hold the instance to persist it across renders
-  const instanceRef = useRef<SocketIOFileUpload | null>(null);
+  const instanceRef = useRef<ThrowFileUpload | null>(null);
 
   if (!instanceRef.current) {
-    instanceRef.current = new SocketIOFileUpload(socket);
+    instanceRef.current = new ThrowFileUpload(socket);
   }
 
   const instance = instanceRef.current;
