@@ -1,12 +1,5 @@
 node_modules/
-client/node_modules/
-client/src/
-client/public/
-client/rsbuild.config.js
-client/package*.json
-client/tsconfig.json
-client/.npmrc
-client/.env*
+client/
 design-system/
 dist/
 uploads/

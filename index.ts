@@ -266,7 +266,7 @@ function getServerOptions() {
 }
 
 function setupProductionEnv(app: Express) {
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.SERVE_STATIC === 'true') {
     const buildPath = join(process.cwd(), 'client/build');
     app.use(express.static(buildPath));
     app.get('/service-worker.js', (req: Request, res: Response) =>
