@@ -28,19 +28,31 @@ interface Env {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    const origin = request.headers.get("Origin") || FRONTEND_ORIGIN;
+
+    // Build CORS headers, echoing back whatever headers the client requests.
+    // This handles browser extensions or proxies that inject extra headers
+    // (e.g. bypass-tunnel-reminder) without needing to whitelist them manually.
+    const requestedHeaders = request.headers.get("Access-Control-Request-Headers");
+    const corsHeaders: Record<string, string> = {
+      ...CORS_HEADERS,
+      "Access-Control-Allow-Origin": origin,
+      ...(requestedHeaders ? { "Access-Control-Allow-Headers": requestedHeaders } : {}),
+    };
+
     // Handle CORS preflight at the Worker level — ensures CORS headers are
     // always present even if the container is cold-starting or returns an error.
     if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: CORS_HEADERS });
+      return new Response(null, { status: 204, headers: corsHeaders });
     }
 
     const container = getContainer(env.THROW_FILES_CONTAINER, "main");
     const response = await container.fetch(request);
 
-    // Clone the response and inject CORS headers so that error responses
+    // Inject CORS headers into every response so that error responses
     // (500/503 during cold-start) don't appear to the browser as CORS failures.
     const newHeaders = new Headers(response.headers);
-    for (const [key, value] of Object.entries(CORS_HEADERS)) {
+    for (const [key, value] of Object.entries(corsHeaders)) {
       newHeaders.set(key, value);
     }
 
