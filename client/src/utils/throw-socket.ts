@@ -22,6 +22,7 @@ export class ThrowSocket {
   private handlers: Map<string, EventHandler[]> = new Map();
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private alive = true;
+  private sendQueue: (string | ArrayBuffer)[] = [];
 
   constructor() {
     this.connect();
@@ -37,6 +38,11 @@ export class ThrowSocket {
         clearTimeout(this.reconnectTimer);
         this.reconnectTimer = null;
       }
+      // Flush any messages that were emitted before the connection opened.
+      this.sendQueue.forEach((msg) => ws.send(msg));
+      this.sendQueue = [];
+      // Let the component know so it can re-join the channel after a reconnect.
+      this.fire("connect");
     };
 
     ws.onmessage = (event: MessageEvent) => {
@@ -142,8 +148,6 @@ export class ThrowSocket {
 
   // Mirrors socket.emit(event, data) — maps to the JSON protocol.
   emit(event: string, data?: unknown): void {
-    if (this.ws?.readyState !== WebSocket.OPEN) return;
-
     let payload: object;
     if (event === "channel-join") {
       payload = { type: "channel-join", channel: data };
@@ -155,12 +159,22 @@ export class ThrowSocket {
         ...(data && typeof data === "object" ? data : {}),
       };
     }
-    this.ws.send(JSON.stringify(payload));
+    const msg = JSON.stringify(payload);
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(msg);
+    } else {
+      // Queue the message — flushed in onopen once the connection is established.
+      this.sendQueue.push(msg);
+    }
   }
 
   // Send a raw binary frame (file chunk).
   sendBinary(data: ArrayBuffer): void {
-    if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(data);
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(data);
+    } else {
+      this.sendQueue.push(data);
+    }
   }
 
   disconnect(): void {

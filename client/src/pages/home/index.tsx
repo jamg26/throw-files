@@ -866,6 +866,10 @@ export const Home = memo(() => {
 
     document.addEventListener("paste", handlePaste);
 
+    // Re-join channel if the WebSocket reconnects (e.g. after network drop).
+    const handleReconnect = () => handleConnectChannel();
+    socket.on("connect", handleReconnect);
+
     return () => {
       socket.off(channel, handleFileChunk);
       socket.off(`done-${channel}`, handleDone);
@@ -873,6 +877,7 @@ export const Home = memo(() => {
       socket.off(`receiving-${channel}`);
       socket.off(`channel-join-${channel}`);
       socket.off(`connections-${channel}`);
+      socket.off("connect", handleReconnect);
       document.removeEventListener("paste", handlePaste);
     };
   }, [channel]);
