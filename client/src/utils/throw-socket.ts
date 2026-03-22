@@ -23,6 +23,7 @@ export class ThrowSocket {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private alive = true;
   private sendQueue: (string | ArrayBuffer)[] = [];
+  private hasConnectedOnce = false;
 
   constructor() {
     this.connect();
@@ -41,8 +42,12 @@ export class ThrowSocket {
       // Flush any messages that were emitted before the connection opened.
       this.sendQueue.forEach((msg) => ws.send(msg));
       this.sendQueue = [];
-      // Let the component know so it can re-join the channel after a reconnect.
-      this.fire("connect");
+      // Only fire "connect" on reconnections — the initial connection already
+      // has the channel-join queued above, so firing here would send it twice.
+      if (this.hasConnectedOnce) {
+        this.fire("connect");
+      }
+      this.hasConnectedOnce = true;
     };
 
     ws.onmessage = (event: MessageEvent) => {
