@@ -9,87 +9,88 @@
    ============================================ */
 :root,
 [data-theme="light"] {
-  /* Base */
-  --bg: #FAF5FF;
-  --bg-body-gradient-1: rgba(124, 58, 237, 0.08);
-  --bg-body-gradient-2: rgba(22, 197, 94, 0.05);
-  --bg-body-gradient-3: rgba(124, 58, 237, 0.05);
+  /* Page background — Apple-style off-white with a hint of violet */
+  --bg: #F2F0F8;
+  --bg-body-gradient-1: rgba(124, 58, 237, 0.06);
+  --bg-body-gradient-2: rgba(22, 197, 94, 0.04);
+  --bg-body-gradient-3: rgba(124, 58, 237, 0.04);
 
-  /* Card / surfaces */
-  --bg-card: rgba(255, 255, 255, 0.95);
+  /* Surfaces — pure white cards that clearly float above the bg */
+  --bg-card: #FFFFFF;
   --bg-elevated: #FFFFFF;
   --bg-modal: #FFFFFF;
-  --bg-overlay: rgba(0, 0, 0, 0.35);
-  --bg-toast: rgba(255, 255, 255, 0.97);
-  --bg-tooltip: rgba(255, 255, 255, 0.97);
-  --bg-header: rgba(255, 255, 255, 0.92);
+  --bg-overlay: rgba(15, 10, 30, 0.4);
+  --bg-toast: #FFFFFF;
+  --bg-tooltip: #1F1B2E;
+  --bg-header: rgba(242, 240, 248, 0.92);
 
   /* Interactive */
-  --bg-input: rgba(124, 58, 237, 0.04);
-  --bg-input-hover: rgba(124, 58, 237, 0.07);
-  --bg-interactive: rgba(124, 58, 237, 0.04);
-  --bg-interactive-hover: rgba(124, 58, 237, 0.09);
-  --bg-channel: rgba(124, 58, 237, 0.04);
+  --bg-input: #F8F7FC;
+  --bg-input-hover: #F2EFF9;
+  --bg-interactive: rgba(124, 58, 237, 0.06);
+  --bg-interactive-hover: rgba(124, 58, 237, 0.1);
+  --bg-channel: #F8F7FC;
   --bg-channel-glow: rgba(22, 197, 94, 0.08);
   --bg-transfer-item: rgba(124, 58, 237, 0.05);
   --bg-history-item: rgba(124, 58, 237, 0.03);
   --bg-history-section: rgba(124, 58, 237, 0.02);
-  --bg-tab-bar: rgba(124, 58, 237, 0.06);
+  --bg-tab-bar: #F2EFF9;
   --bg-tab-active: #7C3AED;
-  --bg-progress-track: rgba(124, 58, 237, 0.1);
-  --bg-more-files: rgba(124, 58, 237, 0.02);
-  --bg-feature-popup: linear-gradient(135deg, #f5f0ff 0%, #ede0ff 100%);
+  --bg-progress-track: #EDE9FA;
+  --bg-more-files: #F8F7FC;
+  --bg-feature-popup: linear-gradient(135deg, #EDE9FA 0%, #DDD6F5 100%);
 
-  /* Borders */
-  --border: #E2E8F0;
-  --border-subtle: #EDE9F6;
-  --border-card-header: #EDE9F6;
-  --border-input: #D1C4FA;
-  --border-input-hover: rgba(124, 58, 237, 0.4);
-  --border-input-focus: rgba(124, 58, 237, 0.6);
-  --border-channel: rgba(124, 58, 237, 0.2);
+  /* Borders — clean, neutral, visible */
+  --border: #E5E7EB;
+  --border-subtle: #EEF0F3;
+  --border-card-header: #F0EDF8;
+  --border-input: #D8D3E8;
+  --border-input-hover: rgba(124, 58, 237, 0.45);
+  --border-input-focus: #7C3AED;
+  --border-channel: #E5E7EB;
   --border-transfer-item: rgba(124, 58, 237, 0.2);
-  --border-history-section: #EDE9F6;
-  --border-tooltip: #E2E8F0;
-  --border-tab: #E2E8F0;
-  --border-header: #E2E8F0;
-  --border-modal: #EDE9F6;
+  --border-history-section: #F0EDF8;
+  --border-tooltip: transparent;
+  --border-tab: transparent;
+  --border-header: #E5E7EB;
+  --border-modal: #F0EDF8;
 
-  /* Text */
-  --text: #1E1333;
-  --text-muted: #475569;
-  --text-subtle: #64748B;
-  --text-disabled: #94A3B8;
-  --text-placeholder: #94A3B8;
-  --tab-inactive-color: #64748B;
+  /* Text — sharp and readable */
+  --text: #111827;
+  --text-muted: #4B5563;
+  --text-subtle: #6B7280;
+  --text-disabled: #9CA3AF;
+  --text-placeholder: #9CA3AF;
+  --tab-inactive-color: #6B7280;
 
   /* Button variants */
-  --btn-secondary-bg: rgba(124, 58, 237, 0.07);
-  --btn-secondary-color: #7C3AED;
-  --btn-secondary-border: rgba(124, 58, 237, 0.25);
-  --btn-secondary-hover-bg: rgba(124, 58, 237, 0.12);
-  --btn-secondary-hover-border: rgba(124, 58, 237, 0.5);
-  --btn-text-color: #475569;
-  --btn-text-hover-color: #1E1333;
-  --btn-text-hover-bg: rgba(124, 58, 237, 0.08);
+  --btn-secondary-bg: #F2EFF9;
+  --btn-secondary-color: #5B21B6;
+  --btn-secondary-border: #DDD6F5;
+  --btn-secondary-hover-bg: #EDE9FA;
+  --btn-secondary-hover-border: rgba(124, 58, 237, 0.45);
+  --btn-text-color: #4B5563;
+  --btn-text-hover-color: #111827;
+  --btn-text-hover-bg: #F2EFF9;
   --btn-tertiary-color: #7C3AED;
-  --btn-tertiary-border: rgba(124, 58, 237, 0.35);
-  --btn-tertiary-hover-bg: rgba(124, 58, 237, 0.08);
+  --btn-tertiary-border: rgba(124, 58, 237, 0.3);
+  --btn-tertiary-hover-bg: #F2EFF9;
   --btn-tertiary-hover-border: rgba(124, 58, 237, 0.6);
 
   /* Misc */
-  --scrollbar-thumb: rgba(124, 58, 237, 0.3);
-  --scrollbar-thumb-hover: rgba(124, 58, 237, 0.55);
-  --dots-shadow: rgba(124, 58, 237, 0.4);
-  --box-shadow-card: 0 4px 24px rgba(124, 58, 237, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
-  --box-shadow-card-hover: 0 8px 32px rgba(124, 58, 237, 0.15), 0 2px 6px rgba(0, 0, 0, 0.08);
-  --nav-icon-color: rgba(30, 19, 51, 0.45);
+  --scrollbar-thumb: #D1C4FA;
+  --scrollbar-thumb-hover: #A78BFA;
+  --dots-shadow: rgba(124, 58, 237, 0.35);
+  /* Elevation: cards float clearly above the bg */
+  --box-shadow-card: 0 1px 3px rgba(0,0,0,0.08), 0 4px 20px rgba(0,0,0,0.06);
+  --box-shadow-card-hover: 0 2px 8px rgba(0,0,0,0.1), 0 8px 28px rgba(124,58,237,0.12);
+  --nav-icon-color: #9CA3AF;
   --nav-icon-hover-color: #7C3AED;
-  --nav-icon-hover-bg: rgba(124, 58, 237, 0.08);
+  --nav-icon-hover-bg: #F2EFF9;
   --channel-code-color: #7C3AED;
-  --history-item-divider: #EDE9F6;
-  --modal-header-border: #EDE9F6;
-  --modal-footer-border: #EDE9F6;
+  --history-item-divider: #F3F4F6;
+  --modal-header-border: #F3F4F6;
+  --modal-footer-border: #F3F4F6;
 }
 
 /* ============================================

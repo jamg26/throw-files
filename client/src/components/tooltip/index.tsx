@@ -36,7 +36,7 @@ const Tip = styled.span`
   transform: translateX(-50%) translateY(0);
   background: var(--bg-tooltip);
   border: 1px solid var(--border-tooltip);
-  color: var(--text);
+  color: #FFFFFF;
   font-family: 'Inter', sans-serif;
   font-size: 12px;
   line-height: 1.5;
@@ -53,8 +53,7 @@ const Tip = styled.span`
     opacity 0.15s ease,
     transform 0.15s ease,
     visibility 0.15s ease;
-  backdrop-filter: blur(8px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 
   &::after {
     content: "";

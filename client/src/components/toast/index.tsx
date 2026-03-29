@@ -88,11 +88,10 @@ const Bubble = styled.div<{ $v: ToastVariant }>`
   border: 1px solid var(--border);
   border-left: 3px solid ${p => variantColor[p.$v]};
   border-radius: 10px;
-  backdrop-filter: blur(16px);
   color: var(--text);
   font-family: 'Inter', sans-serif;
   font-size: 13px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
   animation: ${slideIn} 0.2s ease forwards;
 `;
 
