@@ -128,6 +128,15 @@ class ThrowFileUpload {
         new Uint8Array(chunkBuffer),
       );
 
+      // Back-pressure: wait for the WebSocket send buffer to drain before
+      // queuing the next chunk.  Prevents memory blow-up on slow / mobile
+      // connections where the sender can produce data faster than the network
+      // can consume it.
+      const MAX_BUFFERED = 4 * 1024 * 1024; // 4 MB
+      while (this.socket.bufferedAmount > MAX_BUFFERED) {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+
       this.socket.sendBinary(frame);
 
       offset += chunkBuffer.byteLength;
