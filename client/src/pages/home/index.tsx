@@ -482,7 +482,7 @@ export const Home = memo(() => {
     Record<
       string,
       {
-        chunks: ArrayBuffer[];
+        chunks: Blob[];
         bytesReceived: number;
         fileInfo: {
           name: string;
@@ -496,12 +496,13 @@ export const Home = memo(() => {
   const uploadingRef = useRef(false);
 
   const chunkPicker = (fileSize: number) => {
+    const KB = 1024;
     const MB = 1024 * 1024;
-    if (fileSize < MB) return 64 * 1024; // 64KB for files < 1MB
-    if (fileSize < 10 * MB) return 256 * 1024; // 256KB for files < 10MB
-    if (fileSize < 100 * MB) return MB; // 1MB for files < 100MB
-    if (fileSize < 500 * MB) return 4 * MB; // 4MB for files < 500MB
-    return 16 * MB; // 16MB for larger files
+    if (fileSize < MB) return 64 * KB;         // 64 KB  for files  < 1 MB
+    if (fileSize < 10 * MB) return 256 * KB;   // 256 KB for files  < 10 MB
+    return 512 * KB;                            // 512 KB for all larger files
+    // Cap at 512 KB so the total binary frame (header ~200 B + chunk) stays
+    // well under Cloudflare Workers' 1 MiB WebSocket message limit.
   };
 
   const words = [
@@ -730,8 +731,11 @@ export const Home = memo(() => {
       // Make sure buffer exists (defensive programming)
       const buffer = buffersRef.current[fileId];
       if (buffer) {
-        // Add chunk to buffer
-        buffer.chunks.push(data.file);
+        // Store each chunk as a Blob so the browser can page it to disk
+        // instead of pinning raw ArrayBuffers in the JS heap.  This is
+        // critical for large files on iOS / Android where heap memory is
+        // severely limited and OOM causes the tab to reload.
+        buffer.chunks.push(new Blob([data.file]));
         buffer.bytesReceived += data.file.byteLength;
 
         // Calculate percentage
@@ -797,10 +801,16 @@ export const Home = memo(() => {
         const blob = new Blob(fileData.chunks, { type: data.type });
         const objectUrl = URL.createObjectURL(blob);
         const a = document.createElement("a");
+        a.style.display = "none";
         a.href = objectUrl;
         a.download = data.file_name;
+        // Appending to the DOM is required for the click to work in some
+        // browsers (notably iOS Safari).  Delay the revoke so the browser
+        // has time to start the download before the object URL is invalidated.
+        document.body.appendChild(a);
         a.click();
-        URL.revokeObjectURL(objectUrl);
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
 
         if (window.navigator && window.navigator.vibrate) {
           window.navigator.vibrate(200);
@@ -992,8 +1002,9 @@ export const Home = memo(() => {
         // Add each file to the zip
         for (let i = 0; i < fileList.length; i++) {
           const file = fileList[i];
-          const fileContent = await readFileAsArrayBuffer(file);
-          zip.file(file.name, fileContent);
+          // Pass the File/Blob directly — JSZip accepts them natively and
+          // reads lazily, avoiding loading all files into memory at once.
+          zip.file(file.name, file);
         }
 
         // Generate the zip content
