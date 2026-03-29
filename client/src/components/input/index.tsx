@@ -8,11 +8,11 @@ export const Input = (props: InputHTMLAttributes<HTMLInputElement>) => (
 const StyledInput = styled.input`
   width: 100%;
   box-sizing: border-box;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  color: #E2E8F0;
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
+  color: var(--text);
   border-radius: 12px;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 14px;
   padding: 0 14px;
   height: 40px;
@@ -20,17 +20,17 @@ const StyledInput = styled.input`
   transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 
   &::placeholder {
-    color: rgba(255, 255, 255, 0.28);
+    color: var(--text-placeholder);
   }
 
   &:hover {
-    border-color: rgba(124, 58, 237, 0.4);
-    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--border-input-hover);
+    background: var(--bg-input-hover);
   }
 
   &:focus {
-    border-color: rgba(124, 58, 237, 0.6);
+    border-color: var(--border-input-focus);
     box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--bg-input-hover);
   }
 `;

@@ -14,7 +14,7 @@ interface TextProps extends HTMLAttributes<HTMLSpanElement> {
 export const Text = ({
   small, bold, strong, color, fontSize, mb, type, children, style, ...props
 }: TextProps) => {
-  const s: CSSProperties = { color: '#E2E8F0', ...style };
+  const s: CSSProperties = { color: 'var(--text)', fontFamily: 'Inter, sans-serif', ...style };
 
   if (small) s.fontSize = '12px';
   if (fontSize) s.fontSize = fontSize;
@@ -22,12 +22,12 @@ export const Text = ({
   if (bold || strong) s.fontWeight = 600;
 
   if (color === 'textSubtle' || color === 'secondary' || color === 'textDisabled') {
-    s.color = '#94A3B8';
+    s.color = 'var(--text-muted)';
   } else if (color) {
     s.color = color;
   }
 
-  if (type === 'secondary') s.color = '#94A3B8';
+  if (type === 'secondary') s.color = 'var(--text-muted)';
   if (type === 'success')   s.color = '#22C55E';
   if (type === 'warning')   s.color = '#F59E0B';
   if (type === 'danger')    s.color = '#F43F5E';

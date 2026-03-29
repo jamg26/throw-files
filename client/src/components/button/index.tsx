@@ -67,12 +67,12 @@ const variantStyles: Record<NonNullable<Variant>, ReturnType<typeof css>> = {
     &:active:not(:disabled) { transform: translateY(0); }
   `,
   secondary: css`
-    background: rgba(255,255,255,0.05);
-    color: #E2E8F0;
-    border: 1px solid rgba(255,255,255,0.11);
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-color);
+    border: 1px solid var(--btn-secondary-border);
     &:hover:not(:disabled) {
-      background: rgba(255,255,255,0.09);
-      border-color: rgba(124,58,237,0.4);
+      background: var(--btn-secondary-hover-bg);
+      border-color: var(--btn-secondary-hover-border);
       transform: translateY(-1px);
     }
   `,
@@ -85,22 +85,22 @@ const variantStyles: Record<NonNullable<Variant>, ReturnType<typeof css>> = {
   `,
   text: css`
     background: transparent;
-    color: rgba(255,255,255,0.6);
+    color: var(--btn-text-color);
     border: none;
     padding-left: 4px;
     padding-right: 4px;
     &:hover:not(:disabled) {
-      color: #E2E8F0;
-      background: rgba(255,255,255,0.07);
+      color: var(--btn-text-hover-color);
+      background: var(--btn-text-hover-bg);
     }
   `,
   tertiary: css`
     background: transparent;
-    color: #A78BFA;
-    border: 1px dashed rgba(124,58,237,0.35);
+    color: var(--btn-tertiary-color);
+    border: 1px dashed var(--btn-tertiary-border);
     &:hover:not(:disabled) {
-      background: rgba(124,58,237,0.08);
-      border-color: rgba(124,58,237,0.6);
+      background: var(--btn-tertiary-hover-bg);
+      border-color: var(--btn-tertiary-hover-border);
     }
   `,
   success: css`
@@ -117,7 +117,7 @@ const Btn = styled.button<{ $variant: NonNullable<Variant>; $size: Size; $loadin
   align-items: center;
   justify-content: center;
   gap: 6px;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;

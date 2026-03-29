@@ -63,19 +63,20 @@ const Overlay = styled.div`
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: rgba(0, 0, 0, 0.65);
+  background: var(--bg-overlay);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   animation: ${fadeIn} 0.15s ease;
 `;
 
 const Box = styled.div`
-  background: #111128;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-modal);
+  border: 1px solid var(--border-modal);
   border-radius: 16px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
   overflow: hidden;
   animation: ${scaleIn} 0.18s ease;
+  transition: background 0.25s ease;
 `;
 
 const Header = styled.div`
@@ -83,14 +84,14 @@ const Header = styled.div`
   align-items: center;
   justify-content: space-between;
   padding: 18px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--modal-header-border);
 `;
 
 const Title = styled.div`
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 600;
   font-size: 15px;
-  color: #E2E8F0;
+  color: var(--text);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -100,24 +101,24 @@ const CloseBtn = styled.button`
   background: none;
   border: none;
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--text-muted);
   font-size: 18px;
   line-height: 1;
   padding: 4px;
   border-radius: 6px;
   transition: all 0.15s ease;
-  &:hover { color: rgba(255, 255, 255, 0.7); background: rgba(255, 255, 255, 0.07); }
+  &:hover { color: var(--text); background: var(--bg-interactive); }
 `;
 
 const Body = styled.div<{ $hasHeader: boolean; $hasFooter: boolean }>`
   padding: 24px;
-  color: #E2E8F0;
-  font-family: 'DM Sans', sans-serif;
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
 `;
 
 const Footer = styled.div`
   padding: 16px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--modal-footer-border);
   display: flex;
   justify-content: flex-end;
   gap: 10px;

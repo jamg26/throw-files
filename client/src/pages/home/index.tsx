@@ -55,7 +55,7 @@ const FeaturePopup = ({ visible, onClose }: FeaturePopupProps) => {
     <Modal visible={visible} onClose={onClose} width={560}>
       <div
         style={{
-          background: "linear-gradient(135deg, #1e1e32 0%, #2d1b4e 100%)",
+          background: "var(--bg-feature-popup)",
           padding: "32px",
           borderRadius: "16px",
           position: "relative",
@@ -90,7 +90,7 @@ const FeaturePopup = ({ visible, onClose }: FeaturePopupProps) => {
         <div style={{ position: "relative", zIndex: 1 }}>
           <h3
             style={{
-              fontFamily: "'Space Grotesk', sans-serif",
+              fontFamily: "'Inter', sans-serif",
               color: "#7C3AED",
               margin: 0,
               marginBottom: "16px",
@@ -104,7 +104,7 @@ const FeaturePopup = ({ visible, onClose }: FeaturePopupProps) => {
           </h3>
 
           <Text
-            color="#E2E8F0"
+            color="var(--text)"
             bold
             style={{ display: "block", fontSize: "18px", marginBottom: "16px" }}
           >
@@ -220,7 +220,7 @@ const HistoryModal = ({
           <FileIcon
             size={36}
             style={{
-              color: "rgba(255,255,255,0.18)",
+              color: "var(--text-disabled)",
               marginBottom: "14px",
               display: "block",
             }}
@@ -249,7 +249,7 @@ const HistoryModal = ({
             style={{
               borderBottom:
                 index < files.length - 1
-                  ? "1px solid rgba(255,255,255,0.06)"
+                  ? "1px solid var(--history-item-divider)"
                   : "none",
               padding: "8px 0",
             }}
@@ -265,7 +265,7 @@ const HistoryModal = ({
                 strong
                 style={{
                   fontSize: "14px",
-                  color: "#E2E8F0",
+                  color: "var(--text)",
                 }}
               >
                 <span
@@ -295,7 +295,7 @@ const HistoryModal = ({
                 <Text
                   small
                   color="textSubtle"
-                  style={{ fontSize: "12px", color: "#94A3B8" }}
+                  style={{ fontSize: "12px", color: "var(--text-muted)" }}
                 >
                   {formatTime(new Date(file.sentAt || file.receivedAt!))}
                 </Text>
@@ -374,7 +374,7 @@ const HistoryModal = ({
           display: "flex",
           gap: "4px",
           padding: "4px",
-          background: "rgba(255,255,255,0.04)",
+          background: "var(--bg-tab-bar)",
           borderRadius: "10px",
         }}
       >
@@ -396,15 +396,15 @@ const HistoryModal = ({
               border: "none",
               background:
                 activeTab === tab.key
-                  ? "rgba(124, 58, 237, 0.85)"
+                  ? "var(--bg-tab-active)"
                   : "transparent",
-              color: activeTab === tab.key ? "white" : "rgba(255,255,255,0.45)",
+              color: activeTab === tab.key ? "white" : "var(--tab-inactive-color)",
               cursor: "pointer",
               fontSize: "13px",
               fontWeight: activeTab === tab.key ? "600" : "400",
               borderRadius: "7px",
               transition: "all 0.2s ease",
-              fontFamily: "'Space Grotesk', sans-serif",
+              fontFamily: "'Inter', sans-serif",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -417,7 +417,7 @@ const HistoryModal = ({
                 background:
                   activeTab === tab.key
                     ? "rgba(255,255,255,0.22)"
-                    : "rgba(255,255,255,0.07)",
+                    : "var(--bg-interactive)",
                 padding: "1px 7px",
                 borderRadius: "12px",
                 fontSize: "11px",
@@ -1069,8 +1069,8 @@ export const Home = memo(() => {
             key={file.id}
             style={{
               padding: "12px 14px",
-              background: "rgba(124, 58, 237, 0.07)",
-              border: "1px solid rgba(124, 58, 237, 0.18)",
+              background: "var(--bg-transfer-item)",
+              border: "1px solid var(--border-transfer-item)",
               borderRadius: "10px",
             }}
           >
@@ -1082,7 +1082,7 @@ export const Home = memo(() => {
                 marginBottom: "8px",
               }}
             >
-              <Text style={{ fontSize: "13px", color: "#E2E8F0" }}>
+              <Text style={{ fontSize: "13px", color: "var(--text)" }}>
                 {file.name}
                 {file.compressed && (
                   <span
@@ -1112,7 +1112,7 @@ export const Home = memo(() => {
                 <div
                   style={{
                     height: "3px",
-                    background: "rgba(255, 255, 255, 0.08)",
+                    background: "var(--bg-progress-track)",
                     borderRadius: "2px",
                     overflow: "hidden",
                   }}
@@ -1138,7 +1138,7 @@ export const Home = memo(() => {
                     {progress[file.id]}%
                   </Text>
                   {size[file.id] && (
-                    <Text small style={{ fontSize: "11px", color: "#94A3B8" }}>
+                    <Text small style={{ fontSize: "11px", color: "var(--text-muted)" }}>
                       {((size[file.id].received || 0) / 1048576).toFixed(2)} /{" "}
                       {((size[file.id].original || 0) / 1048576).toFixed(2)} MB
                     </Text>
@@ -1225,10 +1225,10 @@ export const Home = memo(() => {
             key={file.id || index}
             style={{
               padding: "10px 14px",
-              border: "1px solid rgba(255, 255, 255, 0.07)",
+              border: "1px solid var(--border)",
               borderRadius: "10px",
               marginBottom: index < recentFiles.length - 1 ? "6px" : "0",
-              background: "rgba(255, 255, 255, 0.04)",
+              background: "var(--bg-history-item)",
             }}
           >
             <div
@@ -1242,7 +1242,7 @@ export const Home = memo(() => {
               <Text
                 strong
                 style={{
-                  color: "#E2E8F0",
+                  color: "var(--text)",
                   fontSize: "13px",
                   display: "flex",
                   alignItems: "center",
@@ -1278,7 +1278,7 @@ export const Home = memo(() => {
                   marginLeft: "8px",
                 }}
               >
-                <Text small style={{ fontSize: "11px", color: "#94A3B8" }}>
+                <Text small style={{ fontSize: "11px", color: "var(--text-muted)" }}>
                   {formatTime(new Date(file.sentAt || file.receivedAt!))}
                 </Text>
                 <Text
@@ -1301,10 +1301,10 @@ export const Home = memo(() => {
                 opacity: 0.5,
               }}
             >
-              <Text small style={{ fontSize: "11px", color: "#94A3B8" }}>
+              <Text small style={{ fontSize: "11px", color: "var(--text-muted)" }}>
                 {formatFileSize(file.size)}
               </Text>
-              <Text small style={{ fontSize: "11px", color: "#94A3B8" }}>
+              <Text small style={{ fontSize: "11px", color: "var(--text-muted)" }}>
                 {file.channel}
               </Text>
             </div>
@@ -1315,13 +1315,13 @@ export const Home = memo(() => {
             style={{
               textAlign: "center",
               padding: "8px 12px",
-              background: "rgba(255, 255, 255, 0.03)",
+              background: "var(--bg-more-files)",
               borderRadius: "8px",
               marginTop: "6px",
-              border: "1px solid rgba(255, 255, 255, 0.06)",
+              border: "1px solid var(--border-card-header)",
             }}
           >
-            <Text small style={{ color: "#94A3B8" }}>
+            <Text small style={{ color: "var(--text-muted)" }}>
               {allFiles.length - 3} more files.{" "}
               <Button
                 variant="text"
@@ -1374,8 +1374,8 @@ export const Home = memo(() => {
             <CardHeader style={{ borderBottom: "none", paddingBottom: 0 }}>
               <h1
                 style={{
-                  fontFamily: "'Space Grotesk', sans-serif",
-                  color: "#E2E8F0",
+                  fontFamily: "'Inter', sans-serif",
+                  color: "var(--text)",
                   margin: 0,
                   marginBottom: 0,
                   fontWeight: 800,
@@ -1407,10 +1407,10 @@ export const Home = memo(() => {
               >
                 <div
                   style={{
-                    background: "rgba(255, 255, 255, 0.05)",
+                    background: "var(--bg-channel)",
                     padding: "32px",
                     borderRadius: "24px",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    border: "1px solid var(--border-channel)",
                     position: "relative",
                     overflow: "hidden",
                   }}
@@ -1478,8 +1478,8 @@ export const Home = memo(() => {
                   </div>
                   <h1
                     style={{
-                      fontFamily: "'Space Grotesk', sans-serif",
-                      color: "#F43F5E",
+                      fontFamily: "'Inter', sans-serif",
+                      color: "var(--channel-code-color)",
                       margin: 0,
                       fontSize: "48px",
                       fontWeight: 700,
@@ -1607,10 +1607,10 @@ export const Home = memo(() => {
                 {/* File History Section */}
                 <div
                   style={{
-                    border: "1px solid rgba(255, 255, 255, 0.05)",
+                    border: "1px solid var(--border-subtle)",
                     borderRadius: "20px",
                     padding: "20px",
-                    background: "rgba(255, 255, 255, 0.02)",
+                    background: "var(--bg-history-section)",
                   }}
                 >
                   <div
@@ -1626,7 +1626,7 @@ export const Home = memo(() => {
                         style={{
                           fontWeight: "700",
                           fontSize: "16px",
-                          color: "#E2E8F0",
+                          color: "var(--text)",
                         }}
                       >
                         File History
@@ -1692,7 +1692,7 @@ export const Home = memo(() => {
                 <div
                   style={{
                     textAlign: "center",
-                    borderTop: "1px solid rgba(255,255,255,0.05)",
+                    borderTop: "1px solid var(--border-subtle)",
                     paddingTop: "16px",
                   }}
                 >
@@ -1705,11 +1705,11 @@ export const Home = memo(() => {
                       marginBottom: "10px",
                     }}
                   >
-                    <Users size={12} color="rgba(255,255,255,0.28)" />
+                    <Users size={12} color="var(--text-disabled)" />
                     <Text
                       small
                       style={{
-                        color: "rgba(255,255,255,0.38)",
+                        color: "var(--text-subtle)",
                         fontSize: "12px",
                       }}
                     >
@@ -1720,7 +1720,7 @@ export const Home = memo(() => {
                   <div
                     style={{
                       fontSize: "11px",
-                      color: "rgba(255,255,255,0.26)",
+                      color: "var(--text-disabled)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",

@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { Send, Github } from 'lucide-react';
+import { Send, Github, Sun, Moon } from 'lucide-react';
+import { useTheme } from '../../contexts/theme';
 
 export const Header = () => {
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <HeaderContainer>
       <LogoLink to='/'>
@@ -12,6 +15,9 @@ export const Header = () => {
         <LogoText>ThrowMyFile</LogoText>
       </LogoLink>
       <NavActions>
+        <NavButton onClick={toggleTheme} title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'} aria-label="Toggle theme">
+          {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+        </NavButton>
         <NavAnchor
           href="https://github.com/jamg26/throw-files"
           target="_blank"
@@ -36,10 +42,11 @@ const HeaderContainer = styled.header`
   justify-content: space-between;
   padding: 0 32px;
   height: 64px;
-  background: rgba(12, 12, 28, 0.88);
+  background: var(--bg-header);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--border-header);
+  transition: background 0.25s ease, border-color 0.25s ease;
 `;
 
 const LogoLink = styled(Link)`
@@ -69,10 +76,10 @@ const LogoMark = styled.div`
 `;
 
 const LogoText = styled.span`
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 700;
   font-size: 17px;
-  color: #E2E8F0;
+  color: var(--text);
   letter-spacing: -0.4px;
   transition: color 0.2s ease;
 `;
@@ -83,20 +90,25 @@ const NavActions = styled.nav`
   gap: 4px;
 `;
 
-const NavAnchor = styled.a`
+const navItemStyles = `
   display: flex;
   align-items: center;
   justify-content: center;
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--nav-icon-color);
   font-size: 17px;
   transition: all 0.2s ease;
   background: transparent;
+  cursor: pointer;
+  border: none;
 
   &:hover {
-    color: #A78BFA;
-    background: rgba(124, 58, 237, 0.12);
+    color: var(--nav-icon-hover-color);
+    background: var(--nav-icon-hover-bg);
   }
 `;
+
+const NavAnchor = styled.a`${navItemStyles}`;
+const NavButton = styled.button`${navItemStyles}`;
