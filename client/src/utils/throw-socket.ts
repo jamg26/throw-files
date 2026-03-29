@@ -182,6 +182,11 @@ export class ThrowSocket {
     }
   }
 
+  // Bytes queued in the underlying WebSocket send buffer.
+  get bufferedAmount(): number {
+    return this.ws?.bufferedAmount ?? 0;
+  }
+
   disconnect(): void {
     this.alive = false;
     this.ws?.close();
