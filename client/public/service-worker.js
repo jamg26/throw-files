@@ -1,5 +1,5 @@
-var CACHE_NAME = 'pwa-task-manager';
-var urlsToCache = ['/', '/completed'];
+var CACHE_NAME = 'pwa-task-manager-v2';
+var urlsToCache = [];
 
 // Install a service worker
 self.addEventListener('install', (event) => {
@@ -27,7 +27,7 @@ self.addEventListener('fetch', (event) => {
 
 // Update a service worker
 self.addEventListener('activate', (event) => {
-    var cacheWhitelist = ['pwa-task-manager'];
+    var cacheWhitelist = ['pwa-task-manager-v2'];
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
