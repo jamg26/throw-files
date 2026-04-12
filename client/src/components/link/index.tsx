@@ -10,7 +10,7 @@ interface LinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
 
 export const Link = ({ small, bold, color, fontSize, children, style, ...props }: LinkProps) => {
   const s: CSSProperties = {
-    color: '#7C3AED',
+    color: 'var(--accent-primary)',
     textDecoration: 'none',
     cursor: 'pointer',
     transition: 'color 0.2s ease',

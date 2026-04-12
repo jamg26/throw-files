@@ -50,3 +50,5 @@ coverage/
 .gemini/
 design-system/
 client-rsbuild/
+
+.wrangler

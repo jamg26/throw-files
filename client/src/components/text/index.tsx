@@ -14,23 +14,25 @@ interface TextProps extends HTMLAttributes<HTMLSpanElement> {
 export const Text = ({
   small, bold, strong, color, fontSize, mb, type, children, style, ...props
 }: TextProps) => {
-  const s: CSSProperties = { color: 'var(--text)', fontFamily: 'Inter, sans-serif', ...style };
+  const s: CSSProperties = { color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', ...style };
 
   if (small) s.fontSize = '12px';
   if (fontSize) s.fontSize = fontSize;
   if (mb) s.marginBottom = mb;
   if (bold || strong) s.fontWeight = 600;
 
-  if (color === 'textSubtle' || color === 'secondary' || color === 'textDisabled') {
+  if (color === 'textSubtle' || color === 'secondary') {
+    s.color = 'var(--text-secondary)';
+  } else if (color === 'textDisabled') {
     s.color = 'var(--text-muted)';
   } else if (color) {
     s.color = color;
   }
 
-  if (type === 'secondary') s.color = 'var(--text-muted)';
-  if (type === 'success')   s.color = '#22C55E';
-  if (type === 'warning')   s.color = '#F59E0B';
-  if (type === 'danger')    s.color = '#F43F5E';
+  if (type === 'secondary') s.color = 'var(--text-secondary)';
+  if (type === 'success') s.color = 'var(--success)';
+  if (type === 'warning') s.color = 'var(--warning)';
+  if (type === 'danger') s.color = 'var(--danger)';
 
   return <span style={s} {...props}>{children}</span>;
 };

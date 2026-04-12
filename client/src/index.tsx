@@ -15,11 +15,11 @@ export const ThemeContext = createContext({
 
 const dark = {
   colors: {
-    primary: '#7C3AED',
-    secondary: '#A78BFA',
-    cta: '#F43F5E',
-    background: '#0F0F23',
-    text: '#E2E8F0',
+    primary: '#ED4B9E',
+    secondary: '#F472B6',
+    cta: '#ED4B9E',
+    background: '#030014',
+    text: '#FFFFFF',
   }
 };
 

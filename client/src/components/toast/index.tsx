@@ -73,10 +73,10 @@ const Container = styled.div`
 `;
 
 const variantColor: Record<ToastVariant, string> = {
-  success: '#22C55E',
-  error:   '#F43F5E',
-  info:    '#3B82F6',
-  warning: '#F59E0B',
+  success: 'var(--success)',
+  error:   'var(--danger)',
+  info:    'var(--accent-primary)',
+  warning: 'var(--warning)',
 };
 
 const Bubble = styled.div<{ $v: ToastVariant }>`
@@ -84,14 +84,14 @@ const Bubble = styled.div<{ $v: ToastVariant }>`
   align-items: center;
   gap: 10px;
   padding: 12px 16px;
-  background: var(--bg-toast);
-  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-medium);
   border-left: 3px solid ${p => variantColor[p.$v]};
   border-radius: 10px;
-  color: var(--text);
+  color: var(--text-primary);
   font-family: 'Inter', sans-serif;
   font-size: 13px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-lg);
   animation: ${slideIn} 0.2s ease forwards;
 `;
 

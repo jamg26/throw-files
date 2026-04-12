@@ -7,35 +7,46 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 
 export const Card = ({ isWarning, style, ...props }: CardProps) => {
   const combinedStyle: CSSProperties = isWarning
-    ? { ...style, border: '1px solid rgba(124, 58, 237, 0.4)' }
+    ? { ...style, border: '1px solid rgba(99, 102, 241, 0.3)' }
     : { ...style };
   return <GlassCard style={combinedStyle} {...props} />;
 };
 
 export const CardBody = ({ style, ...props }: HTMLAttributes<HTMLDivElement>) => (
-  <div style={{ padding: '24px', ...style }} {...props} />
+  <div style={{ padding: '28px', ...style }} {...props} />
 );
 
 export const CardHeader = ({ style, ...props }: HTMLAttributes<HTMLDivElement>) => (
-  <div style={{ padding: '24px', borderBottom: '1px solid var(--border-card-header)', ...style }} {...props} />
+  <div style={{ padding: '28px 28px 20px', borderBottom: '1px solid var(--border-subtle)', ...style }} {...props} />
 );
 
 const GlassCard = styled.div`
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  box-shadow: var(--box-shadow-card);
-  transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.25s ease;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
-
-  /* backdrop-filter only in dark mode where glass effect adds value */
-  [data-theme="dark"] & {
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
   }
-
+  
   &:hover {
-    border-color: rgba(124, 58, 237, 0.3);
-    box-shadow: var(--box-shadow-card-hover);
+    border-color: var(--border-medium);
+    box-shadow: var(--shadow-lg), 0 0 60px rgba(99, 102, 241, 0.08);
+    
+    &::before {
+      opacity: 1;
+    }
   }
 `;

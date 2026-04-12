@@ -8,29 +8,28 @@ export const Input = (props: InputHTMLAttributes<HTMLInputElement>) => (
 const StyledInput = styled.input`
   width: 100%;
   box-sizing: border-box;
-  background: var(--bg-input);
-  border: 1px solid var(--border-input);
-  color: var(--text);
-  border-radius: 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--text-primary);
+  border-radius: 10px;
   font-family: 'Inter', sans-serif;
   font-size: 14px;
   padding: 0 14px;
-  height: 40px;
   outline: none;
-  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
   &::placeholder {
-    color: var(--text-placeholder);
+    color: var(--text-muted);
   }
 
   &:hover {
-    border-color: var(--border-input-hover);
-    background: var(--bg-input-hover);
+    border-color: var(--border-medium);
+    background: var(--bg-glass);
   }
 
   &:focus {
-    border-color: var(--border-input-focus);
-    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
-    background: var(--bg-input-hover);
+    border-color: var(--input-focus);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+    background: var(--bg-glass);
   }
 `;

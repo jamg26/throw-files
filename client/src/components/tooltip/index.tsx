@@ -34,9 +34,9 @@ const Tip = styled.span`
   bottom: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%) translateY(0);
-  background: var(--bg-tooltip);
-  border: 1px solid var(--border-tooltip);
-  color: #FFFFFF;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-medium);
+  color: var(--text-primary);
   font-family: 'Inter', sans-serif;
   font-size: 12px;
   line-height: 1.5;
@@ -53,7 +53,7 @@ const Tip = styled.span`
     opacity 0.15s ease,
     transform 0.15s ease,
     visibility 0.15s ease;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-lg);
 
   &::after {
     content: "";
@@ -62,6 +62,6 @@ const Tip = styled.span`
     left: 50%;
     transform: translateX(-50%);
     border: 5px solid transparent;
-    border-top-color: var(--bg-tooltip);
+    border-top-color: var(--bg-elevated);
   }
 `;
