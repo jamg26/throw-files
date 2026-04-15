@@ -30,6 +30,10 @@ export class ThrowSocket {
   }
 
   private connect(): void {
+    // Close any existing socket before creating a new one to prevent
+    // double-connection race conditions.
+    this.ws?.close();
+    this.ws = null;
     const ws = new WebSocket(WS_URL);
     ws.binaryType = "arraybuffer";
     this.ws = ws;
@@ -79,6 +83,7 @@ export class ThrowSocket {
     try {
       const view = new DataView(data);
       const headerLen = view.getUint32(0, false);
+      if (4 + headerLen > data.byteLength) return;
       const header = JSON.parse(
         new TextDecoder().decode(data.slice(4, 4 + headerLen)),
       ) as {
@@ -100,7 +105,9 @@ export class ThrowSocket {
         compressed: header.compressed,
         file: chunkBytes,
       });
-    } catch {}
+    } catch (err) {
+      console.warn("[ThrowSocket] handleBinary failed:", err);
+    }
   }
 
   // Map server message types → existing socket event names.

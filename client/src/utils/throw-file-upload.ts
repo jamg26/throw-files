@@ -30,12 +30,25 @@ type CustomFile = File & {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyHandler = (event: any) => void;
 
+/**
+ * Generate a cryptographically secure file ID using Web Crypto API.
+ * Replaces Math.random() which is predictable and can produce collisions.
+ */
+function generateFileId(): string {
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
+  return Array.from(array).map((b) => b.toString(36).padStart(2, "0")).join("");
+}
+
 class ThrowFileUpload {
   socket: ThrowSocket;
   maxFileSize = 0; // 0 = unlimited; set by component (e.g. 5 GB)
   chunkSize = 1024 * 1024; // default 1 MB; overridden per-file by startHandler
 
   private listeners: Map<string, AnyHandler[]> = new Map();
+
+  // Tracks cleanup timers for partially-received files (sender disconnect)
+  private staleBuffers = new Map<string, ReturnType<typeof setTimeout>>();
 
   constructor(socket: ThrowSocket) {
     this.socket = socket;
@@ -64,6 +77,26 @@ class ThrowFileUpload {
     );
   }
 
+  private setStaleCleanup(fileId: string): void {
+    // If sender disconnects mid-transfer, clean up the buffer after 60 s
+    const existing = this.staleBuffers.get(fileId);
+    if (existing !== undefined) clearTimeout(existing);
+    const timer = setTimeout(() => {
+      // Note: buffersRef is on the component side; we just log here
+      console.warn(`[ThrowFileUpload] file ${fileId} timed out — no file-done received`);
+      this.staleBuffers.delete(fileId);
+    }, 60_000);
+    this.staleBuffers.set(fileId, timer);
+  }
+
+  private clearStaleCleanup(fileId: string): void {
+    const timer = this.staleBuffers.get(fileId);
+    if (timer !== undefined) {
+      clearTimeout(timer);
+      this.staleBuffers.delete(fileId);
+    }
+  }
+
   private async uploadFile(file: CustomFile): Promise<void> {
     // File size check (code 1 matches the siofu error code the component handles)
     if (this.maxFileSize > 0 && file.size > this.maxFileSize) {
@@ -71,8 +104,9 @@ class ThrowFileUpload {
       return;
     }
 
-    const id =
-      Math.random().toString(36).slice(2) + Date.now().toString(36);
+    const id = generateFileId();
+    // Arm stale-cleanup timer (cancelled when file-done or complete fires)
+    this.setStaleCleanup(id);
 
     const descriptor: FileDescriptor = {
       id,
@@ -105,7 +139,13 @@ class ThrowFileUpload {
     let offset = 0;
     while (offset < file.size) {
       const slice = file.slice(offset, offset + this.chunkSize);
-      const chunkBuffer = await this.readAsArrayBuffer(slice);
+      let chunkBuffer: ArrayBuffer;
+      try {
+        chunkBuffer = await this.readAsArrayBuffer(slice);
+      } catch (err) {
+        console.error("[ThrowFileUpload] failed to read chunk:", err);
+        return;
+      }
 
       const headerJson = JSON.stringify({
         type: "file-chunk",
@@ -154,6 +194,7 @@ class ThrowFileUpload {
       fileType: descriptor.type,
     });
 
+    this.clearStaleCleanup(id);
     this.dispatch("complete", { file: descriptor });
   }
 
@@ -161,7 +202,10 @@ class ThrowFileUpload {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => resolve(e.target!.result as ArrayBuffer);
-      reader.onerror = reject;
+      reader.onerror = (e) => {
+        console.error("[ThrowFileUpload] FileReader error:", e);
+        reject(e);
+      };
       reader.readAsArrayBuffer(blob);
     });
   }

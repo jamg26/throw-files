@@ -21,6 +21,11 @@ interface ChunkHeader {
 export class ThrowFilesChannel {
   private ctx: DurableObjectState;
 
+  // 5 GB max file size
+  private static readonly MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024;
+  // Valid channel: 4–8 uppercase alphanumeric chars
+  private static readonly CHANNEL_RE = /^[A-Z0-9]{4,8}$/;
+
   constructor(ctx: DurableObjectState) {
     this.ctx = ctx;
     // Auto-respond to "ping" keepalives without waking the DO.
@@ -52,6 +57,9 @@ export class ThrowFilesChannel {
       const { channel } = (ws.deserializeAttachment() as Attachment) ?? {};
       if (!channel) return;
 
+      // Bounds check: header len must fit within the frame
+      if (4 + headerLen > message.byteLength) return;
+
       // Validate the frame header channel matches the sender's channel
       try {
         const view = new DataView(message);
@@ -60,6 +68,8 @@ export class ThrowFilesChannel {
           new TextDecoder().decode(message.slice(4, 4 + headerLen)),
         ) as ChunkHeader;
         if (header.channel !== channel) return;
+        // Enforce file size limit
+        if (header.size > ThrowFilesChannel.MAX_FILE_SIZE) return;
       } catch {
         return;
       }
@@ -111,6 +121,7 @@ export class ThrowFilesChannel {
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   private handleChannelJoin(ws: WebSocket, channel: string): void {
+    if (!ThrowFilesChannel.CHANNEL_RE.test(channel)) return;
     ws.serializeAttachment({ channel } satisfies Attachment);
     this.broadcast(channel, { type: "user-joined", channel }, ws);
     ws.send(
