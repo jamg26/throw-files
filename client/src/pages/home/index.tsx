@@ -591,6 +591,9 @@ export const Home = memo(() => {
     setCurrentChannel(channel);
   }, [channel, currentChannel, addToast]);
 
+  const handleConnectChannelRef = useRef(handleConnectChannel);
+  handleConnectChannelRef.current = handleConnectChannel;
+
   const handleFiles = useCallback(
     async (fileList: File[]) => {
       if (fileList.length > 1) {
@@ -811,7 +814,7 @@ export const Home = memo(() => {
     };
     instance.addEventListener("error", errorHandler);
 
-    if (channel) handleConnectChannel();
+    if (channel) handleConnectChannelRef.current();
     if (channel) window.history.pushState({}, "", `/?channel=${channel}`);
 
     return () => {
@@ -820,7 +823,7 @@ export const Home = memo(() => {
       instance.removeEventListener("start", startHandler);
       instance.removeEventListener("error", errorHandler);
     };
-  }, [channel, sizeLimit, handleConnectChannel, addToast]);
+  }, [channel, sizeLimit, addToast]);
 
   useEffect(() => {
     const handleFileChunk = (data: {
