@@ -9,13 +9,17 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type EventHandler = (data?: any) => void;
 
+type EventType = "channel-join" | "channel-change" | "file-start" | "file-done";
+
 const BACKEND_URL: string =
   (window as { ENV?: { REACT_APP_BACKEND_URL?: string } }).ENV
     ?.REACT_APP_BACKEND_URL ||
   process.env.REACT_APP_BACKEND_URL ||
-  "http://localhost:5000";
+  (typeof window !== "undefined" && window.location.hostname === "localhost"
+    ? "http://localhost:5000"
+    : `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}`);
 
-const WS_URL = BACKEND_URL.replace(/^http/, "ws");
+const WS_URL = BACKEND_URL.replace(/^http/, "ws").replace(/\/$/, "");
 
 export class ThrowSocket {
   private ws: WebSocket | null = null;
@@ -24,6 +28,8 @@ export class ThrowSocket {
   private alive = true;
   private sendQueue: (string | ArrayBuffer)[] = [];
   private hasConnectedOnce = false;
+  private reconnectAttempts = 0;
+  private readonly MAX_RECONNECT_ATTEMPTS = 10;
 
   constructor() {
     this.connect();
@@ -39,6 +45,7 @@ export class ThrowSocket {
         clearTimeout(this.reconnectTimer);
         this.reconnectTimer = null;
       }
+      this.reconnectAttempts = 0; // Reset on successful connection
       // Flush any messages that were emitted before the connection opened.
       this.sendQueue.forEach((msg) => ws.send(msg));
       this.sendQueue = [];
@@ -61,13 +68,23 @@ export class ThrowSocket {
             [k: string]: unknown;
           };
           this.dispatchMsg(msg);
-        } catch {}
+        } catch (error) {
+          console.error("Failed to parse WebSocket message:", error);
+        }
       }
     };
 
     ws.onclose = () => {
-      if (this.alive) {
-        this.reconnectTimer = setTimeout(() => this.connect(), 2000);
+      if (this.alive && this.reconnectAttempts < this.MAX_RECONNECT_ATTEMPTS) {
+        this.reconnectAttempts++;
+        const baseDelay = Math.min(
+          2000 * Math.pow(2, this.reconnectAttempts - 1),
+          30000,
+        );
+        // Add random jitter to prevent thundering herd problem
+        const jitter = Math.random() * 1000;
+        const delay = baseDelay + jitter;
+        this.reconnectTimer = setTimeout(() => this.connect(), delay);
       }
     };
 
@@ -77,8 +94,19 @@ export class ThrowSocket {
   // Binary file chunk — relay to the registered channel handler.
   private handleBinary(data: ArrayBuffer): void {
     try {
+      if (data.byteLength < 4) {
+        console.error("Binary message too short to contain header length");
+        return;
+      }
+
       const view = new DataView(data);
       const headerLen = view.getUint32(0, false);
+
+      if (headerLen > data.byteLength - 4) {
+        console.error("Header length exceeds message size");
+        return;
+      }
+
       const header = JSON.parse(
         new TextDecoder().decode(data.slice(4, 4 + headerLen)),
       ) as {
@@ -91,6 +119,12 @@ export class ThrowSocket {
       };
       const chunkBytes = data.slice(4 + headerLen);
 
+      // Validate header data
+      if (!header.channel || !header.id) {
+        console.error("Invalid binary message header:", header);
+        return;
+      }
+
       // Fires the event named after the channel (matches socket.on(channel, handler))
       this.fire(header.channel, {
         id: header.id,
@@ -100,7 +134,9 @@ export class ThrowSocket {
         compressed: header.compressed,
         file: chunkBytes,
       });
-    } catch {}
+    } catch (error) {
+      console.error("Failed to handle binary message:", error);
+    }
   }
 
   // Map server message types → existing socket event names.
@@ -148,11 +184,15 @@ export class ThrowSocket {
       return;
     }
     const list = this.handlers.get(event);
-    if (list) this.handlers.set(event, list.filter((h) => h !== handler));
+    if (list)
+      this.handlers.set(
+        event,
+        list.filter((h) => h !== handler),
+      );
   }
 
   // Mirrors socket.emit(event, data) — maps to the JSON protocol.
-  emit(event: string, data?: unknown): void {
+  emit(event: EventType, data?: unknown): void {
     let payload: object;
     if (event === "channel-join") {
       payload = { type: "channel-join", channel: data };
@@ -176,7 +216,12 @@ export class ThrowSocket {
   // Send a raw binary frame (file chunk).
   sendBinary(data: ArrayBuffer): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(data);
+      try {
+        this.ws.send(data);
+      } catch (error) {
+        console.error("Failed to send binary data:", error);
+        this.sendQueue.push(data);
+      }
     } else {
       this.sendQueue.push(data);
     }

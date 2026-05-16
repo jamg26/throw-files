@@ -1,4 +1,12 @@
-import { memo, useEffect, useRef, useState, ChangeEvent } from "react";
+import {
+  memo,
+  useEffect,
+  useRef,
+  useState,
+  ChangeEvent,
+  useCallback,
+  useMemo,
+} from "react";
 import {
   RefreshCw,
   Copy,
@@ -24,13 +32,14 @@ import { Modal } from "../../components/modal";
 import { Tooltip } from "../../components/tooltip";
 import { socket } from "../../utils/throw-socket";
 import randomstring from "randomstring";
+import { Button, Input, CardBody, Text } from "../../components";
 import {
-  Button,
-  Input,
-  CardBody,
-  Text,
-} from "../../components";
-import { useSpring, config, useSpringRef, animated, useTrail } from "react-spring";
+  useSpring,
+  config,
+  useSpringRef,
+  animated,
+  useTrail,
+} from "react-spring";
 import styled, { css, keyframes, createGlobalStyle } from "styled-components";
 import JSZip from "jszip";
 import ThrowFileUpload from "../../utils/throw-file-upload";
@@ -40,6 +49,9 @@ const FRONTEND_URL =
     (window as any).ENV &&
     (window as any).ENV.REACT_APP_FRONTEND_URL) ||
   "http://localhost:3000";
+
+const URL_CLEANUP_DELAY = 10000; // 10 seconds
+const TRANSFER_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 
 // Enhanced Keyframes
 const fadeInUp = keyframes`
@@ -146,46 +158,69 @@ interface FileHistory {
   type_info?: "sent" | "received";
 }
 
-const Particles = () => {
-  const colors = ["#ED4B9E", "#F472B6", "#FB7185", "#34D399", "#38BDF8", "#FBBF24"];
-  const particles = Array.from({ length: 20 }, (_, i) => ({
-    id: i,
-    left: `${Math.random() * 100}%`,
-    delay: `${Math.random() * 20}s`,
-    duration: `${15 + Math.random() * 20}s`,
-    color: colors[Math.floor(Math.random() * colors.length)],
-    size: 2 + Math.random() * 4,
-  }));
+const PARTICLES_COLORS = [
+  "#ED4B9E",
+  "#F472B6",
+  "#FB7185",
+  "#34D399",
+  "#38BDF8",
+  "#FBBF24",
+] as const;
 
-  return (
-    <ParticlesContainer>
-      {particles.map((p) => (
-        <Particle
-          key={p.id}
-          style={{
-            left: p.left,
-            animationDelay: p.delay,
-            animationDuration: p.duration,
-            background: p.color,
-            width: `${p.size}px`,
-            height: `${p.size}px`,
-          }}
-        />
-      ))}
-    </ParticlesContainer>
-  );
-};
+// Generate particle data once at module load time to prevent recreation on every render
+const PARTICLES_DATA = Array.from({ length: 20 }, (_, i) => ({
+  id: i,
+  left: `${Math.random() * 100}%`,
+  delay: `${Math.random() * 20}s`,
+  duration: `${15 + Math.random() * 20}s`,
+  color: PARTICLES_COLORS[Math.floor(Math.random() * PARTICLES_COLORS.length)],
+  size: 2 + Math.random() * 4,
+}));
+
+const Particles = memo(
+  () => {
+    return (
+      <ParticlesContainer>
+        {PARTICLES_DATA.map((p) => (
+          <Particle
+            key={p.id}
+            aria-hidden="true"
+            style={{
+              left: p.left,
+              animationDelay: p.delay,
+              animationDuration: p.duration,
+              background: p.color,
+              width: `${p.size}px`,
+              height: `${p.size}px`,
+            }}
+          />
+        ))}
+      </ParticlesContainer>
+    );
+  },
+  () => true,
+); // Static component, never re-renders
 
 const ToastIcon = ({ type }: { type: string }) => {
   switch (type) {
-    case "success": return <CheckCircle size={18} />;
-    case "error": return <AlertCircle size={18} />;
-    case "warning": return <AlertCircle size={18} />;
-    default: return <Info size={18} />;
+    case "success":
+      return <CheckCircle size={18} />;
+    case "error":
+      return <AlertCircle size={18} />;
+    case "warning":
+      return <AlertCircle size={18} />;
+    default:
+      return <Info size={18} />;
   }
 };
 
-const Toast = ({ toast, onRemove }: { toast: ToastData; onRemove: (id: string) => void }) => {
+const Toast = ({
+  toast,
+  onRemove,
+}: {
+  toast: ToastData;
+  onRemove: (id: string) => void;
+}) => {
   const [visible, setVisible] = useState(false);
   const [leaving, setLeaving] = useState(false);
 
@@ -200,10 +235,34 @@ const Toast = ({ toast, onRemove }: { toast: ToastData; onRemove: (id: string) =
 
   const getTypeStyles = () => {
     switch (toast.type) {
-      case "success": return { bg: "var(--success-glow)", border: "rgba(52, 211, 153, 0.3)", color: "var(--success)", iconBg: "rgba(52, 211, 153, 0.15)" };
-      case "error": return { bg: "rgba(248, 113, 113, 0.12)", border: "rgba(248, 113, 113, 0.3)", color: "var(--danger)", iconBg: "rgba(248, 113, 113, 0.15)" };
-      case "warning": return { bg: "rgba(251, 191, 36, 0.12)", border: "rgba(251, 191, 36, 0.3)", color: "var(--warning)", iconBg: "rgba(251, 191, 36, 0.15)" };
-      default: return { bg: "var(--accent-glow)", border: "var(--border-accent)", color: "var(--accent-primary)", iconBg: "rgba(237, 75, 158, 0.15)" };
+      case "success":
+        return {
+          bg: "var(--success-glow)",
+          border: "rgba(52, 211, 153, 0.3)",
+          color: "var(--success)",
+          iconBg: "rgba(52, 211, 153, 0.15)",
+        };
+      case "error":
+        return {
+          bg: "rgba(248, 113, 113, 0.12)",
+          border: "rgba(248, 113, 113, 0.3)",
+          color: "var(--danger)",
+          iconBg: "rgba(248, 113, 113, 0.15)",
+        };
+      case "warning":
+        return {
+          bg: "rgba(251, 191, 36, 0.12)",
+          border: "rgba(251, 191, 36, 0.3)",
+          color: "var(--warning)",
+          iconBg: "rgba(251, 191, 36, 0.15)",
+        };
+      default:
+        return {
+          bg: "var(--accent-glow)",
+          border: "var(--border-accent)",
+          color: "var(--accent-primary)",
+          iconBg: "rgba(237, 75, 158, 0.15)",
+        };
     }
   };
 
@@ -215,14 +274,21 @@ const Toast = ({ toast, onRemove }: { toast: ToastData; onRemove: (id: string) =
       $leaving={leaving}
       style={{ background: styles.bg, borderColor: styles.border }}
     >
-      <ToastIconWrapper style={{ background: styles.iconBg, color: styles.color }}>
+      <ToastIconWrapper
+        style={{ background: styles.iconBg, color: styles.color }}
+      >
         <ToastIcon type={toast.type} />
       </ToastIconWrapper>
       <ToastContent>
         <ToastTitle>{toast.title}</ToastTitle>
         <ToastDescription>{toast.description}</ToastDescription>
       </ToastContent>
-      <ToastClose onClick={() => { setLeaving(true); setTimeout(() => onRemove(toast.id), 400); }}>
+      <ToastClose
+        onClick={() => {
+          setLeaving(true);
+          setTimeout(() => onRemove(toast.id), 400);
+        }}
+      >
         <X size={14} />
       </ToastClose>
       <ToastProgress style={{ background: styles.color }} />
@@ -254,37 +320,60 @@ const HistoryModal = ({
   const [activeTab, setActiveTab] = useState("all");
   const [animatedItems, setAnimatedItems] = useState<Set<string>>(new Set());
 
-  const getAllFiles = () => {
+  const getAllFiles = useCallback(() => {
+    const fallbackTimestamp = Date.now();
     const allFiles = [
-      ...sentFilesHistory.map((file) => ({ ...file, type_info: "sent" as const })),
-      ...receivedFilesHistory.map((file) => ({ ...file, type_info: "received" as const })),
-    ].sort((a, b) => new Date(b.sentAt || b.receivedAt!).getTime() - new Date(a.sentAt || a.receivedAt!).getTime());
+      ...sentFilesHistory.map((file) => ({
+        ...file,
+        type_info: "sent" as const,
+      })),
+      ...receivedFilesHistory.map((file) => ({
+        ...file,
+        type_info: "received" as const,
+      })),
+    ].sort(
+      (a, b) =>
+        new Date(b.sentAt || b.receivedAt || fallbackTimestamp).getTime() -
+        new Date(a.sentAt || a.receivedAt || fallbackTimestamp).getTime(),
+    );
     return allFiles;
-  };
+  }, [sentFilesHistory, receivedFilesHistory]);
 
-  const getFilteredFiles = () => {
+  const getFilteredFiles = useCallback(() => {
     switch (activeTab) {
-      case "sent": return sentFilesHistory.map((file) => ({ ...file, type_info: "sent" as const }));
-      case "received": return receivedFilesHistory.map((file) => ({ ...file, type_info: "received" as const }));
-      default: return getAllFiles();
+      case "sent":
+        return sentFilesHistory.map((file) => ({
+          ...file,
+          type_info: "sent" as const,
+        }));
+      case "received":
+        return receivedFilesHistory.map((file) => ({
+          ...file,
+          type_info: "received" as const,
+        }));
+      default:
+        return getAllFiles();
     }
-  };
+  }, [activeTab, sentFilesHistory, receivedFilesHistory, getAllFiles]);
 
   useEffect(() => {
     if (visible) {
       const files = getFilteredFiles();
       const timer = setTimeout(() => {
+        const timeouts: number[] = [];
         files.forEach((file, i) => {
-          setTimeout(() => {
+          const timeout = setTimeout(() => {
             setAnimatedItems((prev) => new Set([...prev, file.id]));
-          }, i * 70);
+          }, i * 70) as unknown as number;
+          timeouts.push(timeout);
         });
-      }, 150);
+        return () => timeouts.forEach(clearTimeout);
+      }, 150) as unknown as number;
       return () => clearTimeout(timer);
     } else {
       setAnimatedItems(new Set());
     }
-  }, [visible, activeTab]);
+  }, [visible, activeTab, getFilteredFiles]);
 
   const renderHistoryContent = () => {
     const files = getFilteredFiles();
@@ -303,19 +392,35 @@ const HistoryModal = ({
     return (
       <HistoryList>
         {files.map((file, index) => (
-          <HistoryItem key={file.id} $visible={animatedItems.has(file.id)} $delay={index * 70}>
+          <HistoryItem
+            key={file.id}
+            $visible={animatedItems.has(file.id)}
+            $delay={index * 70}
+          >
             <HistoryItemLeft>
               <StatusBadge $type={file.type_info}>
-                {file.type_info === "sent" ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
+                {file.type_info === "sent" ? (
+                  <ArrowUp size={11} />
+                ) : (
+                  <ArrowDown size={11} />
+                )}
               </StatusBadge>
               <FileNameWrapper>
-                <FileNameText title={file.name}>{trimFileName(file.name, 30)}</FileNameText>
+                <FileNameText title={file.name}>
+                  {trimFileName(file.name, 30)}
+                </FileNameText>
                 {file.compressed && <ZipBadge>ZIP</ZipBadge>}
               </FileNameWrapper>
             </HistoryItemLeft>
             <HistoryItemRight>
-              <MetaText>{formatTime(new Date(file.sentAt || file.receivedAt!))}</MetaText>
-              <TypeBadge $type={file.type_info}>{file.type_info === "sent" ? "SENT" : "RECV"}</TypeBadge>
+              <MetaText>
+                {formatTime(
+                  new Date(file.sentAt || file.receivedAt || new Date()),
+                )}
+              </MetaText>
+              <TypeBadge $type={file.type_info}>
+                {file.type_info === "sent" ? "SENT" : "RECV"}
+              </TypeBadge>
             </HistoryItemRight>
             <FileSizeText>{formatFileSize(file.size)}</FileSizeText>
           </HistoryItem>
@@ -342,8 +447,14 @@ const HistoryModal = ({
       width={600}
       footer={
         <ModalFooter>
-          {totalFiles > 0 && <Button variant="danger" onClick={onClearHistory}>Clear All</Button>}
-          <Button variant="primary" onClick={onClose}>Done</Button>
+          {totalFiles > 0 && (
+            <Button variant="danger" onClick={onClearHistory}>
+              Clear All
+            </Button>
+          )}
+          <Button variant="primary" onClick={onClose}>
+            Done
+          </Button>
         </ModalFooter>
       }
     >
@@ -351,9 +462,17 @@ const HistoryModal = ({
         {[
           { key: "all", label: "All", count: totalFiles },
           { key: "sent", label: "Sent", count: sentFilesHistory.length },
-          { key: "received", label: "Received", count: receivedFilesHistory.length },
+          {
+            key: "received",
+            label: "Received",
+            count: receivedFilesHistory.length,
+          },
         ].map((tab) => (
-          <TabButton key={tab.key} $active={activeTab === tab.key} onClick={() => setActiveTab(tab.key)}>
+          <TabButton
+            key={tab.key}
+            $active={activeTab === tab.key}
+            onClick={() => setActiveTab(tab.key)}
+          >
             {tab.label}
             <TabCount $active={activeTab === tab.key}>{tab.count}</TabCount>
           </TabButton>
@@ -382,7 +501,7 @@ export const Home = memo(() => {
     instanceRef.current = new ThrowFileUpload(socket);
   }
 
-  const instance = instanceRef.current;
+  const instance = instanceRef.current!;
 
   const [channel, setChannel] = useState("");
   const [currentChannel, setCurrentChannel] = useState<string | null>(null);
@@ -390,63 +509,194 @@ export const Home = memo(() => {
   const [throwing, setThrowing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState<Record<string, string>>({});
-  const [size, setSize] = useState<Record<string, { received: number; original: number }>>({});
-  const [filesBeingTransferred, setFilesBeingTransferred] = useState<TransferredFile[]>([]);
+  const [size, setSize] = useState<
+    Record<string, { received: number; original: number }>
+  >({});
+  const [filesBeingTransferred, setFilesBeingTransferred] = useState<
+    TransferredFile[]
+  >([]);
   const [showHistory, setShowHistory] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [isChannelFocused, setIsChannelFocused] = useState(false);
   const [sentFilesHistory, setSentFilesHistory] = useState<FileHistory[]>([]);
-  const [receivedFilesHistory, setReceivedFilesHistory] = useState<FileHistory[]>([]);
+  const [receivedFilesHistory, setReceivedFilesHistory] = useState<
+    FileHistory[]
+  >([]);
 
   const [sizeLimit] = useState("5GB");
 
-  const buffersRef = useRef<Record<string, {
-    chunks: Blob[];
-    bytesReceived: number;
-    fileInfo: { name: string; type: string; size: number; compressed: boolean };
-  }>>({});
+  const buffersRef = useRef<
+    Record<
+      string,
+      {
+        chunks: Blob[];
+        bytesReceived: number;
+        fileInfo: {
+          name: string;
+          type: string;
+          size: number;
+          compressed: boolean;
+        };
+        startTime: number;
+        timeoutId?: ReturnType<typeof setTimeout>;
+      }
+    >
+  >({});
   const uploadingRef = useRef(false);
+  const urlCleanupRef = useRef<Record<string, number>>({});
+
+  const addToast = useCallback(
+    (title: string, description: string, variant: string) => {
+      const id =
+        typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+      setToasts((prev) => [
+        ...prev,
+        { id, title, description, type: variant as any },
+      ]);
+    },
+    [],
+  );
 
   const chunkPicker = (fileSize: number) => {
     const KB = 1024;
     const MB = 1024 * 1024;
+    if (fileSize < 256 * KB) return 32 * KB;
     if (fileSize < MB) return 64 * KB;
+    if (fileSize < 5 * MB) return 128 * KB;
     if (fileSize < 10 * MB) return 256 * KB;
-    return 512 * KB;
+    if (fileSize < 50 * MB) return 512 * KB;
+    if (fileSize < 100 * MB) return 1024 * KB;
+    return 2048 * KB;
   };
 
-  // Spring animations
+  const handleConnectChannel = useCallback(() => {
+    if (!channel) return addToast("Error", "Enter a channel code", "danger");
+    if (!/^[A-Z0-9]{1,6}$/.test(channel)) {
+      return addToast(
+        "Error",
+        "Channel code must be 1-6 alphanumeric characters",
+        "danger",
+      );
+    }
+    if (currentChannel && currentChannel !== channel) {
+      socket.emit("channel-change", {
+        previousChannel: currentChannel,
+        newChannel: channel,
+      });
+    } else {
+      socket.emit("channel-join", channel);
+    }
+    setCurrentChannel(channel);
+  }, [channel, currentChannel, addToast]);
+
+  const handleConnectChannelRef = useRef(handleConnectChannel);
+  handleConnectChannelRef.current = handleConnectChannel;
+
+  const handleFiles = useCallback(
+    async (fileList: File[]) => {
+      if (fileList.length > 1) {
+        try {
+          addToast(
+            "Compressing",
+            `Preparing ${fileList.length} files...`,
+            "info",
+          );
+          const zip = new JSZip();
+          for (let i = 0; i < fileList.length; i++) {
+            zip.file(fileList[i].name, fileList[i]);
+          }
+          const zipContent = await zip.generateAsync({ type: "blob" });
+          const zipFile = new File([zipContent], `files_${Date.now()}.zip`, {
+            type: "application/zip",
+          });
+          interface CustomFile extends File {
+            meta?: { compressed: boolean; channel: string };
+          }
+          const customZipFile: CustomFile = new File([zipFile], zipFile.name, {
+            type: zipFile.type,
+            lastModified: zipFile.lastModified,
+          }) as CustomFile;
+          customZipFile.meta = { compressed: true, channel };
+          instance.submitFiles([customZipFile]);
+        } catch (error) {
+          console.error("Zip compression failed:", error);
+          addToast(
+            "Error",
+            `Failed to compress files: ${error instanceof Error ? error.message : "Unknown error"}`,
+            "danger",
+          );
+          // Clean up file input on error
+          if (fileRef.current) fileRef.current.value = "";
+        }
+      } else {
+        instance.submitFiles(fileList);
+      }
+    },
+    [channel, addToast],
+  );
+
+  const handleChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    const newChannel = event.target.value
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, 6);
+    setChannel(newChannel);
+  }, []);
+
+  function calculateSize(fileSize: string) {
+    if (!fileSize || typeof fileSize !== "string") return 0;
+
+    const trimmed = fileSize.trim().toLowerCase();
+    let sizeValue = parseFloat(trimmed);
+
+    if (isNaN(sizeValue)) return 0;
+
+    let unit = trimmed.replace(sizeValue.toString(), "").trim();
+
+    const multipliers: Record<string, number> = {
+      tb: 1024 * 1024 * 1024 * 1024,
+      gb: 1024 * 1024 * 1024,
+      mb: 1024 * 1024,
+      kb: 1024,
+      b: 1,
+      "": 1, // No unit means bytes
+    };
+
+    const multiplier = multipliers[unit] || 0;
+    return sizeValue * multiplier;
+  }
+
   const springRef = useSpringRef();
-  
+
+  const springConfig = { tension: 80, friction: 12, precision: 0.001 };
   const cardSpring = useSpring({
     ref: springRef,
     opacity: isLoaded ? 1 : 0,
-    transform: isLoaded ? "translateY(0) scale(1)" : "translateY(60px) scale(0.95)",
-    config: { tension: 80, friction: 12, precision: 0.001 },
+    transform: isLoaded
+      ? "translateY(0) scale(1)"
+      : "translateY(60px) scale(0.95)",
+    config: springConfig,
   });
-
-  useEffect(() => {
-    setIsLoaded(true);
-    setTimeout(() => springRef.start(), 100);
-  }, []);
-
-  const addToast = (title: string, description: string, variant: string) => {
-    const id = Math.random().toString(36).substr(2, 9);
-    setToasts((prev) => [...prev, { id, title, description, type: variant as any }]);
-  };
 
   const removeToast = (id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  const generateChannel = () => {
+  const generateChannel = useCallback(() => {
     const newChannel = randomstring.generate({
       length: 6,
       charset: "alphanumeric",
       capitalization: "uppercase",
     });
     setChannel(newChannel);
-  };
+  }, []);
+
+  useEffect(() => {
+    setIsLoaded(true);
+    setTimeout(() => springRef.start(), 100);
+  }, []);
 
   useEffect(() => {
     generateChannel();
@@ -456,44 +706,99 @@ export const Home = memo(() => {
       setChannel(channelQuery);
       setCurrentChannel(channelQuery);
     }
-  }, []);
+  }, [generateChannel]);
 
   useEffect(() => {
     const fileInput = document.getElementById("file_input");
     if (fileInput) instance.listenOnInput(fileInput);
     instance.maxFileSize = calculateSize(sizeLimit);
 
-    const progressHandler = (p: { bytesLoaded: number; file: { id: string; size: number } }) => {
+    const progressHandler = (p: {
+      bytesLoaded: number;
+      file: { id: string; size: number };
+    }) => {
       const percentage = ((p.bytesLoaded / p.file.size) * 100).toFixed(2);
       setProgress((prev) => ({ ...prev, [p.file.id]: percentage }));
       setThrowing(true);
-      setSize((prev) => ({ ...prev, [p.file.id]: { received: p.bytesLoaded, original: p.file.size } }));
+      setSize((prev) => ({
+        ...prev,
+        [p.file.id]: { received: p.bytesLoaded, original: p.file.size },
+      }));
     };
     instance.addEventListener("progress", progressHandler);
 
-    const completeHandler = function (event: { file: { id: string; name: string; size: number; type: string; meta?: { compressed?: boolean } } }) {
+    const completeHandler = function (event: {
+      file: {
+        id: string;
+        name: string;
+        size: number;
+        type: string;
+        meta?: { compressed?: boolean };
+      };
+    }) {
       uploadingRef.current = false;
-      addToast("Upload Complete", `${event.file.name} uploaded successfully`, "success");
+      addToast(
+        "Upload Complete",
+        `${event.file.name} uploaded successfully`,
+        "success",
+      );
       const sentFile: FileHistory = {
-        id: event.file.id, name: event.file.name, size: event.file.size, type: event.file.type,
-        sentAt: new Date(), channel, compressed: event.file.meta?.compressed || false,
+        id: event.file.id,
+        name: event.file.name,
+        size: event.file.size,
+        type: event.file.type,
+        sentAt: new Date(),
+        channel,
+        compressed: event.file.meta?.compressed || false,
       };
       setSentFilesHistory((prev) => [sentFile, ...prev]);
-      setProgress((prev) => { const updated = { ...prev }; delete updated[event.file.id]; return updated; });
-      setFilesBeingTransferred((prev) => prev.filter((file) => file.id !== event.file.id));
-      if (Object.keys(progress).length === 0) setThrowing(false);
+      setProgress((prev) => {
+        const updated = { ...prev };
+        delete updated[event.file.id];
+        return updated;
+      });
+      setFilesBeingTransferred((prev) =>
+        prev.filter((file) => file.id !== event.file.id),
+      );
+      setThrowing(false);
       if (fileRef.current) fileRef.current.value = "";
     };
     instance.addEventListener("complete", completeHandler);
 
-    const startHandler = function (event: { file: { id: string; name: string; size: number; type: string; meta: { channel: string; type: string; size: number; id: string; compressed: boolean } } }) {
+    const startHandler = function (event: {
+      file: {
+        id: string;
+        name: string;
+        size: number;
+        type: string;
+        meta: {
+          channel: string;
+          type: string;
+          size: number;
+          id: string;
+          compressed: boolean;
+        };
+      };
+    }) {
       addToast("Sending", `Throwing ${event.file.name}...`, "info");
       uploadingRef.current = true;
-      event.file.meta = { channel, type: event.file.type, size: event.file.size, id: event.file.id, compressed: event.file.meta.compressed || false };
+      event.file.meta = {
+        channel,
+        type: event.file.type,
+        size: event.file.size,
+        id: event.file.id,
+        compressed: event.file.meta.compressed || false,
+      };
       instance.chunkSize = chunkPicker(event.file.size);
       setFilesBeingTransferred((prev) => [
         ...prev,
-        { id: event.file.id, name: event.file.name, size: event.file.size, type: event.file.type, compressed: event.file.meta.compressed },
+        {
+          id: event.file.id,
+          name: event.file.name,
+          size: event.file.size,
+          type: event.file.type,
+          compressed: event.file.meta.compressed,
+        },
       ]);
     };
     instance.addEventListener("start", startHandler);
@@ -509,7 +814,7 @@ export const Home = memo(() => {
     };
     instance.addEventListener("error", errorHandler);
 
-    if (channel) handleConnectChannel();
+    if (channel) handleConnectChannelRef.current();
     if (channel) window.history.pushState({}, "", `/?channel=${channel}`);
 
     return () => {
@@ -518,73 +823,224 @@ export const Home = memo(() => {
       instance.removeEventListener("start", startHandler);
       instance.removeEventListener("error", errorHandler);
     };
-  }, [channel]);
+  }, [channel, sizeLimit, addToast]);
 
   useEffect(() => {
-    const handleFileChunk = (data: { id: string; name: string; type: string; size: number; compressed: boolean; file: ArrayBuffer }) => {
+    const handleFileChunk = (data: {
+      id: string;
+      name: string;
+      type: string;
+      size: number;
+      compressed: boolean;
+      file: ArrayBuffer;
+    }) => {
       const fileId = data.id;
+
+      // Validate chunk data
+      if (!data.file || data.file.byteLength === 0) {
+        console.error("Received empty or invalid chunk for file:", fileId);
+        return;
+      }
+
+      // Validate file size (prevent DoS attacks)
+      const MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024; // 5GB
+      if (data.size > MAX_FILE_SIZE) {
+        console.error("File size exceeds limit:", fileId, data.size);
+        addToast("Error", "File too large to receive", "danger");
+        return;
+      }
+
+      // Validate file type (basic validation)
+      if (!data.type || data.type.length > 255) {
+        console.error("Invalid file type for:", fileId, data.type);
+        addToast("Error", "Invalid file type", "danger");
+        return;
+      }
+
       if (!buffersRef.current[fileId]) {
         buffersRef.current[fileId] = {
-          chunks: [], bytesReceived: 0,
-          fileInfo: { name: data.name, type: data.type, size: data.size, compressed: data.compressed || false },
+          chunks: [],
+          bytesReceived: 0,
+          fileInfo: {
+            name: data.name,
+            type: data.type,
+            size: data.size,
+            compressed: data.compressed || false,
+          },
+          startTime: Date.now(),
         };
         setFilesBeingTransferred((prev) => [
           ...prev,
-          { id: fileId, name: data.name, size: data.size, type: data.type, compressed: data.compressed || false, receiving: true },
+          {
+            id: fileId,
+            name: data.name,
+            size: data.size,
+            type: data.type,
+            compressed: data.compressed || false,
+            receiving: true,
+          },
         ]);
+
+        // Set timeout for incomplete transfers
+        const timeoutId = setTimeout(() => {
+          if (buffersRef.current[fileId]) {
+            console.error(`Transfer timeout for file: ${fileId}`);
+            addToast("Error", `File transfer timeout: ${data.name}`, "danger");
+            delete buffersRef.current[fileId];
+            setFilesBeingTransferred((prev) =>
+              prev.filter((file) => file.id !== fileId),
+            );
+            setProgress((prev) => {
+              const updated = { ...prev };
+              delete updated[fileId];
+              return updated;
+            });
+          }
+        }, TRANSFER_TIMEOUT);
+
+        // Store timeout ID for cleanup
+        buffersRef.current[fileId].timeoutId = timeoutId;
       }
       const buffer = buffersRef.current[fileId];
       if (buffer) {
+        // Check for size mismatch (corrupted transfer)
+        if (buffer.bytesReceived + data.file.byteLength > data.size) {
+          console.error("File size exceeded for:", fileId);
+          addToast("Error", "File transfer corrupted", "danger");
+          delete buffersRef.current[fileId];
+          setFilesBeingTransferred((prev) =>
+            prev.filter((file) => file.id !== fileId),
+          );
+          return;
+        }
+
         buffer.chunks.push(new Blob([data.file]));
         buffer.bytesReceived += data.file.byteLength;
-        const percentage = ((buffer.bytesReceived / data.size) * 100).toFixed(2);
+        const percentage = ((buffer.bytesReceived / data.size) * 100).toFixed(
+          2,
+        );
         setProgress((prev) => ({ ...prev, [fileId]: percentage }));
-        setSize((prev) => ({ ...prev, [fileId]: { received: buffer.bytesReceived, original: data.size } }));
+        setSize((prev) => ({
+          ...prev,
+          [fileId]: { received: buffer.bytesReceived, original: data.size },
+        }));
         setThrowing(true);
       }
     };
 
     socket.on(channel, handleFileChunk);
 
-    const handleDone = async (data: { file_id: string; file_name: string; type: string }) => {
+    const handleDone = async (data: {
+      file_id: string;
+      file_name: string;
+      type: string;
+    }) => {
       const fileId = data.file_id;
       const fileData = buffersRef.current[fileId];
       if (fileData) {
-        addToast("Received", `File received: ${data.file_name}`, "success");
-        const receivedFile: FileHistory = {
-          id: fileId, name: data.file_name, size: fileData.fileInfo.size, type: data.type,
-          receivedAt: new Date(), channel, compressed: fileData.fileInfo.compressed || false,
-        };
-        setReceivedFilesHistory((prev) => [receivedFile, ...prev]);
-        const blob = new Blob(fileData.chunks, { type: data.type });
-        const objectUrl = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.style.display = "none";
-        a.href = objectUrl;
-        a.download = data.file_name;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
-        if (window.navigator?.vibrate) window.navigator.vibrate(200);
-        delete buffersRef.current[fileId];
-        setProgress((prev) => { const updated = { ...prev }; delete updated[fileId]; return updated; });
-        setFilesBeingTransferred((prev) => prev.filter((file) => file.id !== fileId));
-        if (Object.keys(progress).length === 0) setThrowing(false);
+        try {
+          addToast("Received", `File received: ${data.file_name}`, "success");
+          const receivedFile: FileHistory = {
+            id: fileId,
+            name: data.file_name,
+            size: fileData.fileInfo.size,
+            type: data.type,
+            receivedAt: new Date(),
+            channel,
+            compressed: fileData.fileInfo.compressed || false,
+          };
+          setReceivedFilesHistory((prev) => [receivedFile, ...prev]);
+          const blob = new Blob(fileData.chunks, { type: data.type });
+          const objectUrl = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.style.display = "none";
+          a.href = objectUrl;
+          a.download = data.file_name;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+
+          // Clear any existing timeout for this file to prevent race conditions
+          const existingTimeout = urlCleanupRef.current[fileId];
+          if (existingTimeout) {
+            clearTimeout(existingTimeout);
+          }
+
+          const timeoutId = setTimeout(() => {
+            URL.revokeObjectURL(objectUrl);
+            delete urlCleanupRef.current[fileId];
+          }, URL_CLEANUP_DELAY) as unknown as number;
+          urlCleanupRef.current[fileId] = timeoutId;
+          if (window.navigator?.vibrate) window.navigator.vibrate(200);
+
+          // Clear transfer timeout
+          if (fileData.timeoutId) {
+            clearTimeout(fileData.timeoutId);
+          }
+
+          delete buffersRef.current[fileId];
+          setProgress((prev) => {
+            const updated = { ...prev };
+            delete updated[fileId];
+            return updated;
+          });
+          setFilesBeingTransferred((prev) =>
+            prev.filter((file) => file.id !== fileId),
+          );
+          setThrowing(false);
+        } catch (error) {
+          console.error("Failed to process received file:", error);
+          addToast("Error", "Failed to process received file", "danger");
+          delete buffersRef.current[fileId];
+          setFilesBeingTransferred((prev) =>
+            prev.filter((file) => file.id !== fileId),
+          );
+        }
+      } else {
+        // Clean up URL if file data is missing (transfer failed)
+        const existingTimeout = urlCleanupRef.current[fileId];
+        if (existingTimeout) {
+          clearTimeout(existingTimeout);
+          delete urlCleanupRef.current[fileId];
+        }
       }
     };
 
     socket.on(`done-${channel}`, handleDone);
-    socket.on(`join-${channel}`, () => { if (window.navigator?.vibrate) window.navigator.vibrate(200); addToast("Connected", "A user joined the channel", "info"); });
-    socket.on(`receiving-${channel}`, (data: { name: string }) => { if (window.navigator?.vibrate) window.navigator.vibrate(200); addToast("Receiving", `Incoming: ${data.name}`, "info"); });
-    socket.on(`channel-join-${channel}`, (data: string) => addToast("Success", data, "success"));
-    socket.on(`connections-${channel}`, (count: number) => setConnectedUsers(count));
+    socket.on(`join-${channel}`, () => {
+      if (window.navigator?.vibrate) window.navigator.vibrate(200);
+      addToast("Connected", "A user joined the channel", "info");
+    });
+    socket.on(`receiving-${channel}`, (data: { name: string }) => {
+      if (window.navigator?.vibrate) window.navigator.vibrate(200);
+      addToast("Receiving", `Incoming: ${data.name}`, "info");
+    });
+    socket.on(`channel-join-${channel}`, (data: string) =>
+      addToast("Success", data, "success"),
+    );
+    socket.on(`connections-${channel}`, (count: number) =>
+      setConnectedUsers(count),
+    );
 
     const handlePaste = (evt: ClipboardEvent) => {
       const files = evt.clipboardData?.files;
       if (!files || files.length === 0) return;
-      if (uploadingRef.current) return addToast("Busy", "Files are uploading...", "danger");
-      handleFiles(Array.from(files));
+      if (uploadingRef.current)
+        return addToast("Busy", "Files are uploading...", "danger");
+
+      // Filter out non-file items (images, text, etc.)
+      const validFiles = Array.from(files).filter(
+        (file) => file.size > 0 && file.type !== "",
+      );
+      if (validFiles.length === 0) {
+        return addToast(
+          "Error",
+          "No valid files detected in clipboard",
+          "danger",
+        );
+      }
+
+      handleFiles(validFiles);
     };
 
     document.addEventListener("paste", handlePaste);
@@ -600,100 +1056,90 @@ export const Home = memo(() => {
       socket.off(`connections-${channel}`);
       socket.off("connect", handleReconnect);
       document.removeEventListener("paste", handlePaste);
+      Object.values(urlCleanupRef.current).forEach(clearTimeout);
+      urlCleanupRef.current = {};
     };
-  }, [channel]);
+  }, [channel, addToast, handleConnectChannel, handleFiles]);
 
-  function calculateSize(fileSize: string) {
-    let sizeValue = parseFloat(fileSize);
-    let unit = fileSize.replace(sizeValue.toString(), "").trim().toLowerCase();
-    switch (unit) {
-      case "gb": return sizeValue * 1024 * 1024 * 1024;
-      case "mb": return sizeValue * 1024 * 1024;
-      case "kb": return sizeValue * 1024;
-      case "b": return sizeValue;
-      default: return 0;
-    }
-  }
-
-  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const newChannel = event.target.value.toUpperCase().slice(0, 6);
-    setChannel(newChannel);
-  };
-
-  const handleConnectChannel = () => {
-    if (!channel) return addToast("Error", "Enter a channel code", "danger");
-    if (currentChannel && currentChannel !== channel) {
-      socket.emit("channel-change", { previousChannel: currentChannel, newChannel: channel });
-    } else {
-      socket.emit("channel-join", channel);
-    }
-    setCurrentChannel(channel);
-  };
-
-  const copyToClipboard = () => {
+  const copyToClipboard = async () => {
     const text = channel;
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(
-        () => addToast("Copied", "Channel code copied", "success"),
-        () => fallbackCopy(text)
-      );
+      try {
+        await navigator.clipboard.writeText(text);
+        addToast("Copied", "Channel code copied", "success");
+      } catch (error) {
+        console.error("Clipboard API failed:", error);
+        await fallbackCopy(text);
+      }
     } else {
-      fallbackCopy(text);
+      await fallbackCopy(text);
     }
   };
 
-  const shareChannel = () => {
+  const shareChannel = async () => {
     const url = `${FRONTEND_URL}/?channel=${channel}`;
     if (navigator.share) {
-      navigator.share({ title: "ThrowMyFile", text: "Share files instantly", url }).catch(() => {});
+      try {
+        await navigator.share({
+          title: "ThrowMyFile",
+          text: "Share files instantly",
+          url,
+        });
+      } catch (error) {
+        console.error("Share failed:", error);
+      }
     } else if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url).then(
-        () => addToast("Copied", "Link copied to clipboard", "success"),
-        () => fallbackCopy(url)
-      );
+      try {
+        await navigator.clipboard.writeText(url);
+        addToast("Copied", "Link copied to clipboard", "success");
+      } catch {
+        await fallbackCopy(url);
+      }
     } else {
-      fallbackCopy(url);
+      await fallbackCopy(url);
     }
   };
 
-  const fallbackCopy = (text: string) => {
+  const fallbackCopy = async (text: string) => {
     const textarea = document.createElement("textarea");
     textarea.value = text;
     textarea.style.position = "fixed";
     textarea.style.opacity = "0";
     document.body.appendChild(textarea);
     textarea.select();
-    document.execCommand("copy");
-    document.body.removeChild(textarea);
-    addToast("Copied", "Copied to clipboard", "success");
-  };
 
-  const handleFiles = async (fileList: File[]) => {
-    if (fileList.length > 1) {
-      try {
-        addToast("Compressing", `Preparing ${fileList.length} files...`, "info");
-        const zip = new JSZip();
-        for (let i = 0; i < fileList.length; i++) zip.file(fileList[i].name, fileList[i]);
-        const zipContent = await zip.generateAsync({ type: "blob" });
-        const zipFile = new File([zipContent], `files_${Date.now()}.zip`, { type: "application/zip" });
-        interface CustomFile extends File { meta?: { compressed: boolean; channel: string } }
-        const customZipFile: CustomFile = new File([zipFile], zipFile.name, { type: zipFile.type, lastModified: zipFile.lastModified }) as CustomFile;
-        customZipFile.meta = { compressed: true, channel };
-        instance.submitFiles([customZipFile]);
-      } catch { addToast("Error", "Failed to compress files", "danger"); }
-    } else {
-      instance.submitFiles(fileList);
+    try {
+      document.execCommand("copy");
+      addToast("Copied", "Copied to clipboard", "success");
+    } catch (err) {
+      addToast("Error", "Failed to copy to clipboard", "danger");
     }
+    document.body.removeChild(textarea);
   };
 
-  const handleSendClick = () => { if (fileRef.current) fileRef.current.click(); };
-  const handleFileInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    handleFiles(Array.from(files));
-  };
+  const handleSendClick = useCallback(() => {
+    if (fileRef.current) fileRef.current.click();
+  }, []);
 
-  const renderFileTransferList = () => {
+  const handleSendKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        handleSendClick();
+      }
+    },
+    [handleSendClick],
+  );
+  const handleFileInputChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      handleFiles(Array.from(files));
+    },
+    [handleFiles],
+  );
+
+  const renderFileTransferList = useCallback(() => {
     if (filesBeingTransferred.length === 0) return null;
     return (
       <TransferList>
@@ -723,7 +1169,8 @@ export const Home = memo(() => {
                   <ProgressPercent>{progress[file.id]}%</ProgressPercent>
                   {size[file.id] && (
                     <ProgressSize>
-                      {((size[file.id].received || 0) / 1048576).toFixed(1)} / {((size[file.id].original || 0) / 1048576).toFixed(1)} MB
+                      {((size[file.id].received || 0) / 1048576).toFixed(1)} /{" "}
+                      {((size[file.id].original || 0) / 1048576).toFixed(1)} MB
                     </ProgressSize>
                   )}
                 </ProgressInfo>
@@ -733,33 +1180,78 @@ export const Home = memo(() => {
         ))}
       </TransferList>
     );
-  };
+  }, [filesBeingTransferred, progress, size]);
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return "0 B";
-    const k = 1024;
-    const sizes = ["B", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
-  };
-
-  const formatTime = (date: Date) => date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
-
-  const trimFileName = (fileName: string, maxLength = 24) => {
+  const trimFileName = useCallback((fileName: string, maxLength = 24) => {
     if (fileName.length <= maxLength) return fileName;
-    const extension = fileName.split(".").pop() || "";
-    const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf("."));
-    if (nameWithoutExt.length <= maxLength - extension.length - 4) return fileName;
+    const lastDotIndex = fileName.lastIndexOf(".");
+    if (lastDotIndex === -1) {
+      // No extension, just truncate
+      return `${fileName.substring(0, maxLength - 3)}...`;
+    }
+    const extension = fileName.substring(lastDotIndex + 1);
+    const nameWithoutExt = fileName.substring(0, lastDotIndex);
+    if (nameWithoutExt.length <= maxLength - extension.length - 4)
+      return fileName;
     return `${nameWithoutExt.substring(0, Math.max(5, maxLength - extension.length - 4))}...${nameWithoutExt.slice(-4)}.${extension}`;
-  };
+  }, []);
 
-  const renderFileHistory = () => {
+  // Memoize the formatter to avoid recreating it on every call
+  const fileSizeFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat("en-US", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 1,
+      }),
+    [],
+  );
+
+  const formatFileSize = useCallback(
+    (bytes: number) => {
+      if (bytes === 0) return "0 B";
+      const k = 1024;
+      const sizes = ["B", "KB", "MB", "GB", "TB"];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      const value = bytes / Math.pow(k, i);
+      return `${fileSizeFormatter.format(value)} ${sizes[i]}`;
+    },
+    [fileSizeFormatter],
+  );
+
+  const formatTime = useCallback(
+    (date: Date) =>
+      date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }),
+    [],
+  );
+
+  const renderFileHistory = useCallback(() => {
+    const fallbackTimestamp = Date.now();
+
     const allFiles = [
-      ...sentFilesHistory.map((file) => ({ ...file, type_info: "sent" as const })),
-      ...receivedFilesHistory.map((file) => ({ ...file, type_info: "received" as const })),
-    ].sort((a, b) => new Date(b.sentAt || b.receivedAt!).getTime() - new Date(a.sentAt || a.receivedAt!).getTime());
+      ...sentFilesHistory.map((file) => ({
+        ...file,
+        type_info: "sent" as const,
+      })),
+      ...receivedFilesHistory.map((file) => ({
+        ...file,
+        type_info: "received" as const,
+      })),
+    ].sort(
+      (a, b) =>
+        new Date(b.sentAt || b.receivedAt || fallbackTimestamp).getTime() -
+        new Date(a.sentAt || a.receivedAt || fallbackTimestamp).getTime(),
+    );
 
-    if (allFiles.length === 0) return <EmptyHistoryState><Text color="secondary">No transfers yet</Text></EmptyHistoryState>;
+    if (allFiles.length === 0)
+      return (
+        <EmptyHistoryState>
+          <Text color="secondary">No transfers yet</Text>
+        </EmptyHistoryState>
+      );
 
     const recentFiles = allFiles.slice(0, 3);
     return (
@@ -768,13 +1260,25 @@ export const Home = memo(() => {
           <InlineHistoryItem key={file.id || index} $delay={index * 80}>
             <InlineLeft>
               <InlineStatusBadge $type={file.type_info}>
-                {file.type_info === "sent" ? <ArrowUp size={10} /> : <ArrowDown size={10} />}
+                {file.type_info === "sent" ? (
+                  <ArrowUp size={10} />
+                ) : (
+                  <ArrowDown size={10} />
+                )}
               </InlineStatusBadge>
-              <InlineFileName title={file.name}>{trimFileName(file.name, 22)}</InlineFileName>
+              <InlineFileName title={file.name}>
+                {trimFileName(file.name, 22)}
+              </InlineFileName>
             </InlineLeft>
             <InlineRight>
-              <InlineTime>{formatTime(new Date(file.sentAt || file.receivedAt!))}</InlineTime>
-              <InlineTypeBadge $type={file.type_info}>{file.type_info === "sent" ? "SENT" : "RECV"}</InlineTypeBadge>
+              <InlineTime>
+                {formatTime(
+                  new Date(file.sentAt || file.receivedAt || fallbackTimestamp),
+                )}
+              </InlineTime>
+              <InlineTypeBadge $type={file.type_info}>
+                {file.type_info === "sent" ? "SENT" : "RECV"}
+              </InlineTypeBadge>
             </InlineRight>
           </InlineHistoryItem>
         ))}
@@ -785,19 +1289,22 @@ export const Home = memo(() => {
         )}
       </div>
     );
-  };
+  }, [sentFilesHistory, receivedFilesHistory, trimFileName, formatTime]);
 
   return (
     <HomeComponent>
+      <SkipToContent href="#main-content">Skip to main content</SkipToContent>
       <GlobalStyle />
-      
+
       {/* Background Effects */}
-      <div className="mesh-gradient" />
-      <div className="noise" />
+      <div className="mesh-gradient" aria-hidden="true" />
+      <div className="noise" aria-hidden="true" />
       <Particles />
 
       <ToastContainerWrapper>
-        {toasts.map((toast) => <Toast key={toast.id} toast={toast} onRemove={removeToast} />)}
+        {toasts.map((toast) => (
+          <Toast key={toast.id} toast={toast} onRemove={removeToast} />
+        ))}
       </ToastContainerWrapper>
 
       <HistoryModal
@@ -805,21 +1312,24 @@ export const Home = memo(() => {
         onClose={() => setShowHistoryModal(false)}
         sentFilesHistory={sentFilesHistory}
         receivedFilesHistory={receivedFilesHistory}
-        onClearHistory={() => { setSentFilesHistory([]); setReceivedFilesHistory([]); }}
+        onClearHistory={() => {
+          setSentFilesHistory([]);
+          setReceivedFilesHistory([]);
+        }}
         formatFileSize={formatFileSize}
         formatTime={formatTime}
         trimFileName={trimFileName}
       />
 
-      <MainContainer>
+      <MainContainer id="main-content" role="main">
         <animated.div style={cardSpring}>
           <CardWrapper>
             <Card>
               {/* Glowing Border Effect */}
               <CardBorderGlow />
-              
+
               <HeaderSection>
-                <LogoContainer>
+                <LogoContainer aria-hidden="true">
                   <LogoIcon>
                     <UploadIconWrapper>
                       <Upload size={30} />
@@ -829,16 +1339,18 @@ export const Home = memo(() => {
                   </LogoIcon>
                   <LogoGlowBlob />
                 </LogoContainer>
-                
+
                 <Title>Instant P2P</Title>
-                <Subtitle>Secure file transfer across devices, anywhere.</Subtitle>
-                
+                <Subtitle>
+                  Secure file transfer across devices, anywhere.
+                </Subtitle>
+
                 <FeatureBadges>
-                  <Badge>
+                  <Badge aria-label="End-to-End Encrypted">
                     <Shield size={12} />
                     <span>End-to-End Encrypted</span>
                   </Badge>
-                  <Badge>
+                  <Badge aria-label="No Server Storage">
                     <Globe size={12} />
                     <span>No Server Storage</span>
                   </Badge>
@@ -852,12 +1364,22 @@ export const Home = memo(() => {
                     <span>Channel Code</span>
                   </ChannelLabelWrapper>
                   <ChannelBox $focused={isChannelFocused}>
-                    <ChannelCode>{channel}</ChannelCode>
+                    <ChannelCode aria-label="Channel code" role="status">
+                      {channel}
+                    </ChannelCode>
                     <ActionButtons>
-                      <IconButton onClick={copyToClipboard} title="Copy code">
+                      <IconButton
+                        onClick={copyToClipboard}
+                        title="Copy code"
+                        aria-label="Copy channel code"
+                      >
                         <Copy size={16} />
                       </IconButton>
-                      <IconButton onClick={shareChannel} title="Share link">
+                      <IconButton
+                        onClick={shareChannel}
+                        title="Share link"
+                        aria-label="Share channel link"
+                      >
                         <Share2 size={16} />
                       </IconButton>
                     </ActionButtons>
@@ -872,14 +1394,26 @@ export const Home = memo(() => {
                       onBlur={() => setIsChannelFocused(false)}
                       placeholder="Enter code"
                       value={channel}
+                      autoComplete="off"
+                      autoCapitalize="characters"
+                      autoCorrect="off"
+                      spellCheck="false"
                     />
                   </InputWrapper>
                   <Tooltip title="Generate new">
-                    <IconButtonSecondary onClick={generateChannel}>
+                    <IconButtonSecondary
+                      onClick={generateChannel}
+                      aria-label="Generate new channel code"
+                    >
                       <RefreshCw size={16} />
                     </IconButtonSecondary>
                   </Tooltip>
-                  <Button variant="primary" onClick={handleConnectChannel} style={{ height: 54 }}>
+                  <Button
+                    variant="primary"
+                    onClick={handleConnectChannel}
+                    style={{ height: 54 }}
+                    disabled={!channel || throwing}
+                  >
                     <Zap size={16} />
                     Join
                   </Button>
@@ -887,9 +1421,12 @@ export const Home = memo(() => {
 
                 {renderFileTransferList()}
 
-                <FileSection>
+                <FileSection role="region" aria-label="File upload area">
                   {throwing && (
-                    <LoadingDotsWrapper>
+                    <LoadingDotsWrapper
+                      aria-live="polite"
+                      aria-label="Files are being transferred"
+                    >
                       <LoadingDot />
                       <LoadingDot />
                       <LoadingDot />
@@ -897,8 +1434,12 @@ export const Home = memo(() => {
                   )}
                   {!throwing && (
                     <SendButtonWrapper>
-                      <SendButton onClick={handleSendClick}>
-                        <SendButtonIcon>
+                      <SendButton
+                        onClick={handleSendClick}
+                        onKeyDown={handleSendKeyDown}
+                        aria-label="Send files"
+                      >
+                        <SendButtonIcon aria-hidden="true">
                           <Upload size={22} />
                         </SendButtonIcon>
                         <SendButtonText>Send Files</SendButtonText>
@@ -911,18 +1452,22 @@ export const Home = memo(() => {
                   )}
                 </FileSection>
 
-                <HistorySection>
+                <HistorySection role="region" aria-label="Recent transfers">
                   <HistoryHeader>
                     <HistoryTitle>
                       <Sparkles size={15} />
                       Recent Transfers
                     </HistoryTitle>
                     <HistoryStats>
-                      {sentFilesHistory.length + receivedFilesHistory.length} total
+                      {sentFilesHistory.length + receivedFilesHistory.length}{" "}
+                      total
                     </HistoryStats>
                   </HistoryHeader>
-                  {showHistory && <HistoryContent>{renderFileHistory()}</HistoryContent>}
-                  {sentFilesHistory.length + receivedFilesHistory.length > 0 && (
+                  {showHistory && (
+                    <HistoryContent>{renderFileHistory()}</HistoryContent>
+                  )}
+                  {sentFilesHistory.length + receivedFilesHistory.length >
+                    0 && (
                     <ViewAllButton onClick={() => setShowHistoryModal(true)}>
                       View All History
                     </ViewAllButton>
@@ -937,7 +1482,11 @@ export const Home = memo(() => {
                   <FooterLinks>
                     <span>© {new Date().getFullYear()} ThrowMyFile</span>
                     <FooterLink href="/privacy-policy">Privacy</FooterLink>
-                    <FooterLink href="https://github.com/jamg26/throw-files" target="_blank" rel="noopener noreferrer">
+                    <FooterLink
+                      href="https://github.com/jamg26/throw-files"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       <Github size={14} />
                     </FooterLink>
                   </FooterLinks>
@@ -948,7 +1497,15 @@ export const Home = memo(() => {
         </animated.div>
       </MainContainer>
 
-      <input type="file" ref={fileRef} id="file_input" multiple hidden onChange={handleFileInputChange} />
+      <input
+        type="file"
+        ref={fileRef}
+        id="file_input"
+        multiple
+        hidden
+        onChange={handleFileInputChange}
+        aria-label="Select files to upload"
+      />
     </HomeComponent>
   );
 });
@@ -964,7 +1521,7 @@ const MainContainer = styled.div`
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  padding: 24px 16px;
+  padding: 80px 16px 24px;
 `;
 
 const CardWrapper = styled.div`
@@ -987,7 +1544,9 @@ const Card = styled.div`
   &:hover {
     border-color: var(--border-accent);
     transform: translateY(-6px);
-    box-shadow: var(--shadow-xl), 0 0 120px var(--accent-glow);
+    box-shadow:
+      var(--shadow-xl),
+      0 0 120px var(--accent-glow);
   }
 `;
 
@@ -996,15 +1555,24 @@ const CardBorderGlow = styled.div`
   inset: -1px;
   border-radius: 28px;
   padding: 1px;
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-tertiary), var(--accent-sky));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  background: linear-gradient(
+    135deg,
+    var(--accent-primary),
+    var(--accent-tertiary),
+    var(--accent-sky)
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   opacity: 0;
   transition: opacity 0.5s ease;
   pointer-events: none;
-  
+
   ${Card}:hover & {
     opacity: 0.6;
     animation: ${borderGlow} 2s ease-in-out infinite;
@@ -1035,14 +1603,14 @@ const LogoIcon = styled.div`
   position: relative;
   z-index: 1;
   animation: ${float} 4s ease-in-out infinite;
-  box-shadow: 
+  box-shadow:
     0 0 30px var(--accent-glow-strong),
     0 12px 40px rgba(129, 140, 248, 0.25);
 `;
 
 const UploadIconWrapper = styled.div`
   color: white;
-  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
 `;
 
 const LogoRing = styled.div`
@@ -1087,7 +1655,11 @@ const Title = styled.h1`
   letter-spacing: -2px;
   color: var(--text-primary);
   margin: 0 0 12px;
-  background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-secondary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--text-primary) 0%,
+    var(--accent-secondary) 100%
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1144,29 +1716,37 @@ const ChannelLabelWrapper = styled.div`
 
 const ChannelBox = styled.div<{ $focused?: boolean }>`
   background: var(--bg-tertiary);
-  border: 1px solid ${p => p.$focused ? "var(--accent-primary)" : "var(--border-subtle)"};
+  border: 1px solid
+    ${(p) => (p.$focused ? "var(--accent-primary)" : "var(--border-subtle)")};
   border-radius: 18px;
   padding: 22px 26px;
   display: flex;
   align-items: center;
   gap: 16px;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: ${p => p.$focused ? "0 0 0 4px var(--accent-glow), 0 8px 32px rgba(0,0,0,0.2)" : "none"};
+  box-shadow: ${(p) =>
+    p.$focused
+      ? "0 0 0 4px var(--accent-glow), 0 8px 32px rgba(0,0,0,0.2)"
+      : "none"};
 
   &:hover {
     border-color: var(--border-accent);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   }
 
   [data-theme="light"] & {
     background: var(--bg-secondary);
-    border-color: ${p => p.$focused ? "var(--accent-primary)" : "var(--border-subtle)"};
-    box-shadow: ${p => p.$focused ? "0 0 0 4px var(--accent-glow), 0 4px 20px var(--accent-glow)" : "var(--shadow-sm)"};
+    border-color: ${(p) =>
+      p.$focused ? "var(--accent-primary)" : "var(--border-subtle)"};
+    box-shadow: ${(p) =>
+      p.$focused
+        ? "0 0 0 4px var(--accent-glow), 0 4px 20px var(--accent-glow)"
+        : "var(--shadow-sm)"};
   }
 `;
 
 const ChannelCode = styled.span`
-  font-family: 'Inter', monospace;
+  font-family: "Inter", monospace;
   font-size: 38px;
   font-weight: 700;
   letter-spacing: 6px;
@@ -1242,7 +1822,7 @@ const TransferItem = styled.div<{ $delay: number }>`
   border: 1px solid var(--border-subtle);
   border-radius: 18px;
   padding: 20px 22px;
-  animation: ${fadeInUp} 0.5s ease ${p => p.$delay}ms both;
+  animation: ${fadeInUp} 0.5s ease ${(p) => p.$delay}ms both;
   transition: all 0.3s ease;
 
   &:hover {
@@ -1272,7 +1852,8 @@ const FileNameWrapper = styled.div`
 `;
 
 const FileIconWrapper = styled.div<{ $receiving?: boolean }>`
-  color: ${p => p.$receiving ? "var(--accent-sky)" : "var(--accent-emerald)"};
+  color: ${(p) =>
+    p.$receiving ? "var(--accent-sky)" : "var(--accent-emerald)"};
   flex-shrink: 0;
 `;
 
@@ -1302,7 +1883,8 @@ const TransferStatus = styled.span<{ $receiving?: boolean }>`
   gap: 8px;
   font-size: 11px;
   font-weight: 700;
-  color: ${p => p.$receiving ? "var(--accent-sky)" : "var(--accent-emerald)"};
+  color: ${(p) =>
+    p.$receiving ? "var(--accent-sky)" : "var(--accent-emerald)"};
   text-transform: uppercase;
   letter-spacing: 0.5px;
 `;
@@ -1311,9 +1893,11 @@ const StatusDot = styled.span<{ $receiving?: boolean }>`
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: ${p => p.$receiving ? "var(--accent-sky)" : "var(--accent-emerald)"};
+  background: ${(p) =>
+    p.$receiving ? "var(--accent-sky)" : "var(--accent-emerald)"};
   animation: ${pulse} 1.5s ease-in-out infinite;
-  box-shadow: 0 0 10px ${p => p.$receiving ? "var(--accent-sky)" : "var(--accent-emerald)"};
+  box-shadow: 0 0 10px
+    ${(p) => (p.$receiving ? "var(--accent-sky)" : "var(--accent-emerald)")};
 `;
 
 const ProgressTrack = styled.div`
@@ -1340,7 +1924,12 @@ const ProgressGlow = styled.div`
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.5),
+    transparent
+  );
   animation: ${shimmer} 1.5s infinite;
 `;
 
@@ -1380,8 +1969,12 @@ const LoadingDot = styled.div`
   background: var(--accent-gradient);
   animation: bounce 1.4s ease-in-out infinite both;
 
-  &:nth-of-type(1) { animation-delay: -0.32s; }
-  &:nth-of-type(2) { animation-delay: -0.16s; }
+  &:nth-of-type(1) {
+    animation-delay: -0.32s;
+  }
+  &:nth-of-type(2) {
+    animation-delay: -0.16s;
+  }
 `;
 
 const SendButtonWrapper = styled.div`
@@ -1401,20 +1994,20 @@ const SendButton = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 14px;
-  box-shadow: 
+  box-shadow:
     0 8px 40px rgba(129, 140, 248, 0.4),
-    0 0 0 1px rgba(255,255,255,0.1) inset;
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   letter-spacing: -0.02em;
   position: relative;
   overflow: hidden;
 
   &:hover {
     transform: translateY(-6px) scale(1.03);
-    box-shadow: 
+    box-shadow:
       0 16px 60px rgba(129, 140, 248, 0.5),
-      0 0 0 1px rgba(255,255,255,0.2) inset;
+      0 0 0 1px rgba(255, 255, 255, 0.2) inset;
     animation: ${gradientShift} 2s ease infinite;
   }
 
@@ -1423,14 +2016,14 @@ const SendButton = styled.button`
   }
 
   [data-theme="light"] & {
-    box-shadow: 
+    box-shadow:
       0 8px 32px rgba(99, 102, 241, 0.3),
-      0 0 0 1px rgba(255,255,255,0.2) inset;
-    
+      0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+
     &:hover {
-      box-shadow: 
+      box-shadow:
         0 16px 48px rgba(99, 102, 241, 0.4),
-        0 0 0 1px rgba(255,255,255,0.3) inset;
+        0 0 0 1px rgba(255, 255, 255, 0.3) inset;
     }
   }
 `;
@@ -1438,7 +2031,7 @@ const SendButton = styled.button`
 const SendButtonIcon = styled.div`
   display: flex;
   transition: transform 0.3s ease;
-  
+
   ${SendButton}:hover & {
     transform: translateY(-3px) scale(1.1);
   }
@@ -1452,9 +2045,14 @@ const ButtonShine = styled.div`
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
   transition: left 0.7s ease;
-  
+
   ${SendButton}:hover & {
     left: 100%;
   }
@@ -1542,7 +2140,7 @@ const InlineHistoryItem = styled.div<{ $delay: number }>`
   border: 1px solid var(--border-subtle);
   border-radius: 16px;
   margin-bottom: 10px;
-  animation: ${fadeInUp} 0.4s ease ${p => p.$delay}ms both;
+  animation: ${fadeInUp} 0.4s ease ${(p) => p.$delay}ms both;
   transition: all 0.3s ease;
 
   &:hover {
@@ -1563,8 +2161,10 @@ const InlineStatusBadge = styled.span<{ $type: "sent" | "received" }>`
   width: 30px;
   height: 30px;
   border-radius: 10px;
-  background: ${p => p.$type === "sent" ? "var(--success-glow)" : "var(--accent-glow)"};
-  color: ${p => p.$type === "sent" ? "var(--success)" : "var(--accent-primary)"};
+  background: ${(p) =>
+    p.$type === "sent" ? "var(--success-glow)" : "var(--accent-glow)"};
+  color: ${(p) =>
+    p.$type === "sent" ? "var(--success)" : "var(--accent-primary)"};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1595,7 +2195,8 @@ const InlineTypeBadge = styled.span<{ $type: "sent" | "received" }>`
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.5px;
-  color: ${p => p.$type === "sent" ? "var(--success)" : "var(--accent-primary)"};
+  color: ${(p) =>
+    p.$type === "sent" ? "var(--success)" : "var(--accent-primary)"};
 `;
 
 const SeeMoreButton = styled.button`
@@ -1609,7 +2210,7 @@ const SeeMoreButton = styled.button`
   color: var(--accent-primary);
   cursor: pointer;
   transition: all 0.25s ease;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   animation: ${fadeInUp} 0.4s ease;
 
   &:hover {
@@ -1632,7 +2233,7 @@ const ViewAllButton = styled.button`
   cursor: pointer;
   margin-top: 16px;
   transition: all 0.2s ease;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
 
   &:hover {
     background: var(--accent-glow);
@@ -1750,26 +2351,28 @@ const TabButton = styled.button<{ $active: boolean }>`
   flex: 1;
   padding: 14px 18px;
   border: none;
-  background: ${p => p.$active ? "var(--accent-gradient)" : "transparent"};
-  color: ${p => p.$active ? "white" : "var(--text-secondary)"};
+  background: ${(p) => (p.$active ? "var(--accent-gradient)" : "transparent")};
+  color: ${(p) => (p.$active ? "white" : "var(--text-secondary)")};
   cursor: pointer;
   font-size: 14px;
-  font-weight: ${p => p.$active ? "700" : "500"};
+  font-weight: ${(p) => (p.$active ? "700" : "500")};
   border-radius: 14px;
   transition: all 0.25s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
 
   &:hover {
-    background: ${p => p.$active ? "var(--accent-gradient)" : "var(--bg-glass)"};
+    background: ${(p) =>
+      p.$active ? "var(--accent-gradient)" : "var(--bg-glass)"};
   }
 `;
 
 const TabCount = styled.span<{ $active: boolean }>`
-  background: ${p => p.$active ? "rgba(255,255,255,0.2)" : "var(--bg-glass)"};
+  background: ${(p) =>
+    p.$active ? "rgba(255,255,255,0.2)" : "var(--bg-glass)"};
   padding: 4px 12px;
   border-radius: 14px;
   font-size: 12px;
@@ -1817,9 +2420,9 @@ const HistoryItem = styled.div<{ $visible: boolean; $delay: number }>`
   align-items: center;
   padding: 18px 0;
   border-bottom: 1px solid var(--border-subtle);
-  opacity: ${p => p.$visible ? 1 : 0};
-  transform: translateX(${p => p.$visible ? 0 : -30}px);
-  transition: all 0.4s ease ${p => p.$delay}ms;
+  opacity: ${(p) => (p.$visible ? 1 : 0)};
+  transform: translateX(${(p) => (p.$visible ? 0 : -30)}px);
+  transition: all 0.4s ease ${(p) => p.$delay}ms;
 
   &:last-child {
     border-bottom: none;
@@ -1844,8 +2447,10 @@ const StatusBadge = styled.span<{ $type: "sent" | "received" }>`
   width: 32px;
   height: 32px;
   border-radius: 12px;
-  background: ${p => p.$type === "sent" ? "var(--success-glow)" : "var(--accent-glow)"};
-  color: ${p => p.$type === "sent" ? "var(--success)" : "var(--accent-primary)"};
+  background: ${(p) =>
+    p.$type === "sent" ? "var(--success-glow)" : "var(--accent-glow)"};
+  color: ${(p) =>
+    p.$type === "sent" ? "var(--success)" : "var(--accent-primary)"};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1877,7 +2482,8 @@ const TypeBadge = styled.span<{ $type: "sent" | "received" }>`
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.5px;
-  color: ${p => p.$type === "sent" ? "var(--success)" : "var(--accent-primary)"};
+  color: ${(p) =>
+    p.$type === "sent" ? "var(--success)" : "var(--accent-primary)"};
 `;
 
 const FileSizeText = styled.span`
@@ -1907,8 +2513,8 @@ const ToastContainer = styled.div<{ $visible: boolean; $leaving: boolean }>`
   box-shadow: var(--shadow-lg);
   min-width: 340px;
   max-width: 440px;
-  transform: translateX(${p => p.$leaving ? "120%" : "0"});
-  opacity: ${p => p.$visible ? 1 : 0};
+  transform: translateX(${(p) => (p.$leaving ? "120%" : "0")});
+  opacity: ${(p) => (p.$visible ? 1 : 0)};
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
@@ -1966,9 +2572,31 @@ const ToastProgress = styled.div`
   left: 0;
   height: 3px;
   animation: toastProgress 5s linear forwards;
-  
+
   @keyframes toastProgress {
-    from { width: 100%; }
-    to { width: 0%; }
+    from {
+      width: 100%;
+    }
+    to {
+      width: 0%;
+    }
+  }
+`;
+
+const SkipToContent = styled.a`
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--accent-primary);
+  color: white;
+  padding: 8px 16px;
+  z-index: 9999;
+  text-decoration: none;
+  font-weight: 600;
+  border-radius: 0 0 8px 0;
+  transition: top 0.3s ease;
+
+  &:focus {
+    top: 0;
   }
 `;

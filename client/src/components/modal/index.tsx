@@ -1,6 +1,6 @@
-import { ReactNode, useEffect } from 'react';
-import ReactDOM from 'react-dom';
-import styled, { keyframes } from 'styled-components';
+import { ReactNode, useEffect, useRef } from "react";
+import ReactDOM from "react-dom";
+import styled, { keyframes } from "styled-components";
 
 interface ModalProps {
   visible: boolean;
@@ -11,39 +11,78 @@ interface ModalProps {
   width?: number | string;
 }
 
-export const Modal = ({ visible, onClose, title, children, footer, width = 520 }: ModalProps) => {
+export const Modal = ({
+  visible,
+  onClose,
+  title,
+  children,
+  footer,
+  width = 520,
+}: ModalProps) => {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const previousActiveElement = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
     if (visible) {
-      document.body.style.overflow = 'hidden';
-      document.addEventListener('keydown', handleKey);
+      // Store the previously focused element to restore focus later
+      previousActiveElement.current = document.activeElement as HTMLElement;
+      document.body.style.overflow = "hidden";
+      document.addEventListener("keydown", handleKey);
+
+      // Focus the modal when it opens
+      setTimeout(() => {
+        modalRef.current?.focus();
+      }, 0);
     }
     return () => {
-      document.body.style.overflow = '';
-      document.removeEventListener('keydown', handleKey);
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", handleKey);
+
+      // Restore focus to the previously focused element when modal closes
+      if (previousActiveElement.current) {
+        previousActiveElement.current.focus();
+      }
     };
   }, [visible, onClose]);
 
   if (!visible) return null;
 
   return ReactDOM.createPortal(
-    <Overlay onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <Box style={{ maxWidth: width, width: '100%' }}>
+    <Overlay
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <Box
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? "modal-title" : undefined}
+        tabIndex={-1}
+        style={{ maxWidth: width, width: "100%" }}
+      >
         {title !== undefined && (
           <Header>
-            <Title>{title}</Title>
+            <Title id="modal-title">{title}</Title>
             <CloseBtn onClick={onClose} aria-label="Close">
               <X size={18} />
             </CloseBtn>
           </Header>
         )}
-        <Body $hasHeader={title !== undefined} $hasFooter={!!footer}>
+        <Body
+          $hasHeader={title !== undefined}
+          $hasFooter={!!footer}
+          role="document"
+        >
           {children}
         </Body>
         {footer && <Footer>{footer}</Footer>}
       </Box>
     </Overlay>,
-    document.body
+    document.body,
   );
 };
 
@@ -68,6 +107,11 @@ const Overlay = styled.div`
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+
+  @supports not (backdrop-filter: blur(8px)) {
+    background: rgba(0, 0, 0, 0.8);
+  }
+
   animation: ${fadeIn} 0.15s ease;
 `;
 
@@ -75,7 +119,9 @@ const Box = styled.div`
   background: var(--bg-secondary);
   border: 1px solid var(--border-subtle);
   border-radius: 20px;
-  box-shadow: var(--shadow-lg), 0 0 80px rgba(99, 102, 241, 0.05);
+  box-shadow:
+    var(--shadow-lg),
+    0 0 80px rgba(99, 102, 241, 0.05);
   overflow: hidden;
   animation: ${scaleIn} 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 `;
@@ -89,7 +135,7 @@ const Header = styled.div`
 `;
 
 const Title = styled.div`
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   font-weight: 600;
   font-size: 16px;
   color: var(--text-primary);
@@ -111,7 +157,7 @@ const CloseBtn = styled.button`
   align-items: center;
   justify-content: center;
   transition: all 0.15s ease;
-  
+
   &:hover {
     background: var(--bg-glass-hover);
     color: var(--text-primary);
@@ -122,7 +168,7 @@ const CloseBtn = styled.button`
 const Body = styled.div<{ $hasHeader: boolean; $hasFooter: boolean }>`
   padding: 24px;
   color: var(--text-primary);
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
 `;
 
 const Footer = styled.div`
@@ -134,7 +180,16 @@ const Footer = styled.div`
 `;
 
 const X = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M18 6L6 18M6 6l12 12" />
   </svg>
 );
