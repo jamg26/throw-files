@@ -547,9 +547,10 @@ export const Home = memo(() => {
 
   const addToast = useCallback(
     (title: string, description: string, variant: string) => {
-      const id = crypto.randomUUID?.()
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+      const id =
+        typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
       setToasts((prev) => [
         ...prev,
         { id, title, description, type: variant as any },
@@ -630,7 +631,7 @@ export const Home = memo(() => {
         instance.submitFiles(fileList);
       }
     },
-    [channel, addToast, handleConnectChannel, uploadingRef],
+    [channel, addToast],
   );
 
   const handleChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
