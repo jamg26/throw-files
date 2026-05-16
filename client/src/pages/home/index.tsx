@@ -1105,13 +1105,8 @@ export const Home = memo(() => {
     textarea.select();
 
     try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(text);
-        addToast("Copied", "Copied to clipboard", "success");
-      } else {
-        document.execCommand("copy");
-        addToast("Copied", "Copied to clipboard", "success");
-      }
+      document.execCommand("copy");
+      addToast("Copied", "Copied to clipboard", "success");
     } catch (err) {
       addToast("Error", "Failed to copy to clipboard", "danger");
     }
@@ -1232,24 +1227,19 @@ export const Home = memo(() => {
   const renderFileHistory = useCallback(() => {
     const fallbackTimestamp = Date.now();
 
-    // Use useMemo to prevent recreating arrays on every render
-    const allFiles = useMemo(
-      () =>
-        [
-          ...sentFilesHistory.map((file) => ({
-            ...file,
-            type_info: "sent" as const,
-          })),
-          ...receivedFilesHistory.map((file) => ({
-            ...file,
-            type_info: "received" as const,
-          })),
-        ].sort(
-          (a, b) =>
-            new Date(b.sentAt || b.receivedAt || fallbackTimestamp).getTime() -
-            new Date(a.sentAt || a.receivedAt || fallbackTimestamp).getTime(),
-        ),
-      [sentFilesHistory, receivedFilesHistory, fallbackTimestamp],
+    const allFiles = [
+      ...sentFilesHistory.map((file) => ({
+        ...file,
+        type_info: "sent" as const,
+      })),
+      ...receivedFilesHistory.map((file) => ({
+        ...file,
+        type_info: "received" as const,
+      })),
+    ].sort(
+      (a, b) =>
+        new Date(b.sentAt || b.receivedAt || fallbackTimestamp).getTime() -
+        new Date(a.sentAt || a.receivedAt || fallbackTimestamp).getTime(),
     );
 
     if (allFiles.length === 0)
