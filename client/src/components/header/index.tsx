@@ -1,14 +1,14 @@
-import { Link } from 'react-router-dom';
-import styled from 'styled-components';
-import { Github, Sun, Moon } from 'lucide-react';
-import { useTheme } from '../../contexts/theme';
+import { Link } from "react-router-dom";
+import styled from "styled-components";
+import { Github, Sun, Moon } from "lucide-react";
+import { useTheme } from "../../contexts/theme";
 
 export const Header = () => {
   const { theme, toggleTheme } = useTheme();
 
   return (
     <HeaderContainer>
-      <LogoLink to='/'>
+      <LogoLink to="/">
         <LogoMark>
           <UploadIcon>
             <path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 0 0 4.561 21h14.878a2 2 0 0 0 1.94-1.515L22 17" />
@@ -16,15 +16,22 @@ export const Header = () => {
         </LogoMark>
         <LogoText>ThrowMyFile</LogoText>
       </LogoLink>
-      <NavActions>
-        <NavButton onClick={toggleTheme} title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'} aria-label="Toggle theme">
-          {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+      <NavActions aria-label="Main navigation">
+        <NavButton
+          onClick={toggleTheme}
+          title={
+            theme === "light" ? "Switch to dark mode" : "Switch to light mode"
+          }
+          aria-label="Toggle theme"
+        >
+          {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
         </NavButton>
         <NavAnchor
           href="https://github.com/jamg26/throw-files"
           target="_blank"
           rel="noopener noreferrer"
           title="View Source on GitHub"
+          aria-label="View Source on GitHub"
         >
           <Github size={17} />
         </NavAnchor>
@@ -70,13 +77,22 @@ const LogoMark = styled.div`
 `;
 
 const UploadIcon = ({ children }: { children: React.ReactNode }) => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="white"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     {children}
   </svg>
 );
 
 const LogoText = styled.span`
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   font-weight: 700;
   font-size: 16px;
   color: var(--text-primary);
@@ -109,5 +125,9 @@ const navItemStyles = `
   }
 `;
 
-const NavAnchor = styled.a`${navItemStyles}`;
-const NavButton = styled.button`${navItemStyles}`;
+const NavAnchor = styled.a`
+  ${navItemStyles}
+`;
+const NavButton = styled.button`
+  ${navItemStyles}
+`;

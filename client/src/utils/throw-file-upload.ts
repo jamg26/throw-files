@@ -36,6 +36,7 @@ class ThrowFileUpload {
   chunkSize = 1024 * 1024; // default 1 MB; overridden per-file by startHandler
 
   private listeners: Map<string, AnyHandler[]> = new Map();
+  private abortControllers: Map<string, AbortController> = new Map();
 
   constructor(socket: ThrowSocket) {
     this.socket = socket;
@@ -51,7 +52,19 @@ class ThrowFileUpload {
 
   removeEventListener(type: string, handler: AnyHandler): void {
     const list = this.listeners.get(type);
-    if (list) this.listeners.set(type, list.filter((h) => h !== handler));
+    if (list)
+      this.listeners.set(
+        type,
+        list.filter((h) => h !== handler),
+      );
+  }
+
+  cancelUpload(fileId: string): void {
+    const controller = this.abortControllers.get(fileId);
+    if (controller) {
+      controller.abort();
+      this.abortControllers.delete(fileId);
+    }
   }
 
   private dispatch(type: string, payload: object): void {
@@ -67,12 +80,30 @@ class ThrowFileUpload {
   private async uploadFile(file: CustomFile): Promise<void> {
     // File size check (code 1 matches the siofu error code the component handles)
     if (this.maxFileSize > 0 && file.size > this.maxFileSize) {
-      this.dispatch("error", { code: 1 });
+      this.dispatch("error", {
+        code: 1,
+        message: `File size exceeds limit of ${this.maxFileSize} bytes`,
+      });
       return;
     }
 
-    const id =
-      Math.random().toString(36).slice(2) + Date.now().toString(36);
+    // Validate file is not empty
+    if (file.size === 0) {
+      this.dispatch("error", { code: 4, message: "File is empty" });
+      return;
+    }
+
+    // Validate file name
+    if (!file.name || file.name.length > 255) {
+      this.dispatch("error", { code: 5, message: "Invalid file name" });
+      return;
+    }
+
+    const id = Math.random().toString(36).slice(2) + Date.now().toString(36);
+
+    // Create abort controller for this upload
+    const abortController = new AbortController();
+    this.abortControllers.set(id, abortController);
 
     const descriptor: FileDescriptor = {
       id,
@@ -103,65 +134,89 @@ class ThrowFileUpload {
 
     // Stream chunks
     let offset = 0;
-    while (offset < file.size) {
-      const slice = file.slice(offset, offset + this.chunkSize);
-      const chunkBuffer = await this.readAsArrayBuffer(slice);
+    try {
+      while (offset < file.size) {
+        if (abortController.signal.aborted) {
+          this.dispatch("error", { code: 2 }); // Upload cancelled
+          return;
+        }
+        const slice = file.slice(offset, offset + this.chunkSize);
+        const chunkBuffer = await this.readAsArrayBuffer(slice);
 
-      const headerJson = JSON.stringify({
-        type: "file-chunk",
-        id: descriptor.id,
-        channel: descriptor.meta.channel,
-        name: descriptor.name,
-        fileType: descriptor.type,
-        size: descriptor.size,
-        compressed: descriptor.meta.compressed,
-      });
-      const headerBytes = new TextEncoder().encode(headerJson);
+        const headerJson = JSON.stringify({
+          type: "file-chunk",
+          id: descriptor.id,
+          channel: descriptor.meta.channel,
+          name: descriptor.name,
+          fileType: descriptor.type,
+          size: descriptor.size,
+          compressed: descriptor.meta.compressed,
+        });
+        const headerBytes = new TextEncoder().encode(headerJson);
 
-      // [4 bytes header length][header bytes][chunk bytes]
-      const frame = new ArrayBuffer(
-        4 + headerBytes.byteLength + chunkBuffer.byteLength,
-      );
-      new DataView(frame).setUint32(0, headerBytes.byteLength, false);
-      new Uint8Array(frame, 4, headerBytes.byteLength).set(headerBytes);
-      new Uint8Array(frame, 4 + headerBytes.byteLength).set(
-        new Uint8Array(chunkBuffer),
-      );
+        // [4 bytes header length][header bytes][chunk bytes]
+        const frame = new ArrayBuffer(
+          4 + headerBytes.byteLength + chunkBuffer.byteLength,
+        );
+        new DataView(frame).setUint32(0, headerBytes.byteLength, false);
+        new Uint8Array(frame, 4, headerBytes.byteLength).set(headerBytes);
+        new Uint8Array(frame, 4 + headerBytes.byteLength).set(
+          new Uint8Array(chunkBuffer),
+        );
 
-      // Back-pressure: wait for the WebSocket send buffer to drain before
-      // queuing the next chunk.  Prevents memory blow-up on slow / mobile
-      // connections where the sender can produce data faster than the network
-      // can consume it.
-      const MAX_BUFFERED = 4 * 1024 * 1024; // 4 MB
-      while (this.socket.bufferedAmount > MAX_BUFFERED) {
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        // Back-pressure: wait for the WebSocket send buffer to drain before
+        // queuing the next chunk.  Prevents memory blow-up on slow / mobile
+        // connections where the sender can produce data faster than the network
+        // can consume it.
+        const MAX_BUFFERED = 4 * 1024 * 1024; // 4 MB
+        while (this.socket.bufferedAmount > MAX_BUFFERED) {
+          if (abortController.signal.aborted) {
+            this.dispatch("error", { code: 2 }); // Upload cancelled
+            return;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+
+        this.socket.sendBinary(frame);
+
+        offset += chunkBuffer.byteLength;
+
+        this.dispatch("progress", {
+          bytesLoaded: offset,
+          file: { id: descriptor.id, size: file.size },
+        });
       }
 
-      this.socket.sendBinary(frame);
-
-      offset += chunkBuffer.byteLength;
-
-      this.dispatch("progress", {
-        bytesLoaded: offset,
-        file: { id: descriptor.id, size: file.size },
+      // Signal end-of-file to server and all receivers.
+      this.socket.emit("file-done", {
+        id: descriptor.id,
+        name: descriptor.name,
+        fileType: descriptor.type,
       });
+
+      this.dispatch("complete", { file: descriptor });
+      this.abortControllers.delete(id);
+    } catch (error) {
+      this.abortControllers.delete(id);
+      this.dispatch("error", {
+        code: 3,
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+      throw error;
     }
-
-    // Signal end-of-file to server and all receivers.
-    this.socket.emit("file-done", {
-      id: descriptor.id,
-      name: descriptor.name,
-      fileType: descriptor.type,
-    });
-
-    this.dispatch("complete", { file: descriptor });
   }
 
   private readAsArrayBuffer(blob: Blob): Promise<ArrayBuffer> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target!.result as ArrayBuffer);
-      reader.onerror = reject;
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          resolve(e.target.result as ArrayBuffer);
+        } else {
+          reject(new Error("FileReader returned empty result"));
+        }
+      };
+      reader.onerror = () => reject(new Error("Failed to read file chunk"));
       reader.readAsArrayBuffer(blob);
     });
   }

@@ -71,7 +71,8 @@ export class ThrowFilesChannel {
     let msg: { type: string; [key: string]: unknown };
     try {
       msg = JSON.parse(message);
-    } catch {
+    } catch (error) {
+      console.error("Failed to parse WebSocket message:", error);
       return;
     }
 
@@ -87,7 +88,10 @@ export class ThrowFilesChannel {
         );
         break;
       case "file-start":
-        this.handleFileStart(ws, msg as unknown as { id: string; name: string });
+        this.handleFileStart(
+          ws,
+          msg as unknown as { id: string; name: string },
+        );
         break;
       case "file-done":
         this.handleFileDone(
@@ -130,7 +134,11 @@ export class ThrowFilesChannel {
   ): void {
     ws.serializeAttachment({ channel: newChannel } satisfies Attachment);
     if (previousChannel) this.broadcastConnections(previousChannel);
-    this.broadcast(newChannel, { type: "user-joined", channel: newChannel }, ws);
+    this.broadcast(
+      newChannel,
+      { type: "user-joined", channel: newChannel },
+      ws,
+    );
     ws.send(
       JSON.stringify({
         type: "channel-joined",
@@ -192,7 +200,9 @@ export class ThrowFilesChannel {
     for (const client of this.channelSockets(channel, exclude)) {
       try {
         client.send(msg);
-      } catch {}
+      } catch (error) {
+        console.error("Failed to send message to client:", error);
+      }
     }
   }
 
@@ -211,8 +221,9 @@ export class ThrowFilesChannel {
   private broadcastConnections(channel: string): void {
     const count = this.ctx
       .getWebSockets()
-      .filter((ws) => (ws.deserializeAttachment() as Attachment)?.channel === channel)
-      .length;
+      .filter(
+        (ws) => (ws.deserializeAttachment() as Attachment)?.channel === channel,
+      ).length;
     const msg = JSON.stringify({ type: "connections", channel, count });
     for (const client of this.ctx.getWebSockets()) {
       const att = client.deserializeAttachment() as Attachment;

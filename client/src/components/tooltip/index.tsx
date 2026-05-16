@@ -7,11 +7,14 @@ interface TooltipProps {
 }
 
 export const Tooltip = ({ title, children }: TooltipProps) => {
-  if (!title) return <>{children}</>;
+  if (title === undefined || title === null || title === "")
+    return <>{children}</>;
   return (
     <Wrapper>
       {children}
-      <Tip>{title}</Tip>
+      <Tip role="tooltip" aria-hidden="true">
+        {title}
+      </Tip>
     </Wrapper>
   );
 };
@@ -37,7 +40,7 @@ const Tip = styled.span`
   background: var(--bg-elevated);
   border: 1px solid var(--border-medium);
   color: var(--text-primary);
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   font-size: 12px;
   line-height: 1.5;
   padding: 7px 10px;
