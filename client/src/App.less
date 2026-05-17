@@ -345,22 +345,12 @@ body {
 
 /* Scrollbar - Thin but visible for accessibility */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--border-medium);
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--border-strong);
+  width: 0px;
+  height: 0px;
 }
 * {
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-medium) transparent;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 /* Selection */
