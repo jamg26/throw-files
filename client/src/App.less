@@ -345,7 +345,7 @@ body {
 
 /* Scrollbar - Thin but visible for accessibility */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 0px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
@@ -359,7 +359,8 @@ body {
   background: var(--border-strong);
 }
 * {
-  scrollbar-width: thin;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   scrollbar-color: var(--border-medium) transparent;
 }
 
