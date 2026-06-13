@@ -1522,12 +1522,25 @@ const MainContainer = styled.div`
   align-items: center;
   min-height: 100vh;
   padding: 80px 16px 24px;
+
+  @media (max-width: 480px) {
+    padding: 48px 12px 16px;
+    align-items: flex-start;
+  }
 `;
 
 const CardWrapper = styled.div`
   width: 100%;
-  max-width: 500px;
+  max-width: 520px;
   position: relative;
+
+  @media (max-width: 480px) {
+    max-width: 100%;
+  }
+
+  @media (min-width: 1024px) {
+    max-width: 560px;
+  }
 `;
 
 const Card = styled.div`
@@ -1583,6 +1596,10 @@ const HeaderSection = styled.div`
   text-align: center;
   padding: 32px 28px 24px;
   position: relative;
+
+  @media (max-width: 480px) {
+    padding: 24px 18px 20px;
+  }
 `;
 
 const LogoContainer = styled.div`
@@ -1650,9 +1667,9 @@ const LogoGlowBlob = styled.div`
 `;
 
 const Title = styled.h1`
-  font-size: 32px;
+  font-size: clamp(26px, 6.5vw, 34px);
   font-weight: 800;
-  letter-spacing: -2px;
+  letter-spacing: -1.5px;
   color: var(--text-primary);
   margin: 0 0 12px;
   background: linear-gradient(
@@ -1663,20 +1680,35 @@ const Title = styled.h1`
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+
+  @media (max-width: 360px) {
+    font-size: 24px;
+    letter-spacing: -1px;
+  }
 `;
 
 const Subtitle = styled.p`
   font-size: 14px;
   color: var(--text-secondary);
-  margin: 0 0 20px;
+  margin: 0 auto 20px;
   line-height: 1.6;
+  max-width: 34ch;
+
+  @media (max-width: 480px) {
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
 `;
 
 const FeatureBadges = styled.div`
   display: flex;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
+
+  @media (max-width: 480px) {
+    gap: 8px;
+  }
 `;
 
 const Badge = styled.div`
@@ -1695,6 +1727,11 @@ const Badge = styled.div`
 
   svg {
     color: var(--accent-primary);
+  }
+
+  @media (max-width: 480px) {
+    padding: 5px 10px;
+    font-size: 10px;
   }
 `;
 
@@ -1723,6 +1760,7 @@ const ChannelBox = styled.div<{ $focused?: boolean }>`
   display: flex;
   align-items: center;
   gap: 16px;
+  min-width: 0;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: ${(p) =>
     p.$focused
@@ -1743,21 +1781,41 @@ const ChannelBox = styled.div<{ $focused?: boolean }>`
         ? "0 0 0 4px var(--accent-glow), 0 4px 20px var(--accent-glow)"
         : "var(--shadow-sm)"};
   }
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 16px;
+  }
 `;
 
 const ChannelCode = styled.span`
   font-family: "Inter", monospace;
-  font-size: 38px;
+  font-size: clamp(24px, 7vw, 38px);
   font-weight: 700;
-  letter-spacing: 6px;
+  letter-spacing: clamp(2px, 1.2vw, 6px);
   color: var(--accent-primary);
   flex: 1;
+  min-width: 0;
+  word-break: break-word;
+  text-align: left;
   text-shadow: 0 0 40px var(--accent-glow);
+
+  @media (max-width: 360px) {
+    font-size: 22px;
+    letter-spacing: 1px;
+  }
 `;
 
 const ActionButtons = styled.div`
   display: flex;
   gap: 10px;
+  flex-shrink: 0;
+
+  @media (max-width: 480px) {
+    justify-content: flex-end;
+  }
 `;
 
 const IconButton = styled.button`
@@ -1790,15 +1848,31 @@ const IconButtonSecondary = styled(IconButton)`
   background: var(--bg-tertiary);
 `;
 
+const InputWrapper = styled.div`
+  flex: 1;
+`;
+
 const JoinSection = styled.div`
   display: flex;
   gap: 12px;
   align-items: stretch;
   margin-bottom: 28px;
-`;
 
-const InputWrapper = styled.div`
-  flex: 1;
+  @media (max-width: 600px) {
+    flex-wrap: wrap;
+    gap: 10px;
+
+    ${InputWrapper} {
+      width: 100%;
+      flex: none;
+    }
+
+    > button,
+    > div {
+      flex: 1;
+      min-width: 0;
+    }
+  }
 `;
 
 const StyledInput = styled(Input)`
@@ -1808,6 +1882,12 @@ const StyledInput = styled(Input)`
   border-radius: 16px;
   text-transform: uppercase;
   font-weight: 600;
+
+  @media (max-width: 480px) {
+    height: 48px;
+    font-size: 15px;
+    letter-spacing: 2px;
+  }
 `;
 
 const TransferList = styled.div`
@@ -2026,6 +2106,14 @@ const SendButton = styled.button`
         0 0 0 1px rgba(255, 255, 255, 0.3) inset;
     }
   }
+
+  @media (max-width: 480px) {
+    width: 100%;
+    padding: 16px 24px;
+    font-size: 16px;
+    gap: 10px;
+    border-radius: 18px;
+  }
 `;
 
 const SendButtonIcon = styled.div`
@@ -2062,6 +2150,11 @@ const PasteHint = styled.p`
   margin-top: 18px;
   font-size: 14px;
   color: var(--text-muted);
+
+  @media (max-width: 480px) {
+    font-size: 13px;
+    margin-top: 14px;
+  }
 `;
 
 const PasteText = styled.span`
@@ -2091,12 +2184,19 @@ const HistorySection = styled.div`
   [data-theme="light"] & {
     background: var(--bg-secondary);
   }
+
+  @media (max-width: 480px) {
+    padding: 16px;
+    margin-top: 22px;
+  }
 `;
 
 const HistoryHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-bottom: 18px;
 `;
 
@@ -2148,6 +2248,13 @@ const InlineHistoryItem = styled.div<{ $delay: number }>`
     transform: translateX(8px);
     box-shadow: 0 4px 24px var(--accent-glow);
   }
+
+  @media (max-width: 400px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px;
+  }
 `;
 
 const InlineLeft = styled.div`
@@ -2184,6 +2291,11 @@ const InlineRight = styled.div`
   display: flex;
   align-items: center;
   gap: 14px;
+  flex-shrink: 0;
+
+  @media (max-width: 400px) {
+    gap: 10px;
+  }
 `;
 
 const InlineTime = styled.span`
@@ -2271,6 +2383,7 @@ const FooterLinks = styled.div`
   gap: 24px;
   font-size: 12px;
   color: var(--text-muted);
+  flex-wrap: wrap;
 
   a {
     color: inherit;
@@ -2284,6 +2397,10 @@ const FooterLinks = styled.div`
       color: var(--accent-primary);
       transform: scale(1.1);
     }
+  }
+
+  @media (max-width: 480px) {
+    gap: 12px;
   }
 `;
 

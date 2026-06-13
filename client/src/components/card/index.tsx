@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { CSSProperties, ReactNode, HTMLAttributes } from "react";
+import { CSSProperties, HTMLAttributes } from "react";
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   isWarning?: boolean;
@@ -12,12 +12,17 @@ export const Card = ({ isWarning, style, ...props }: CardProps) => {
   return <GlassCard style={combinedStyle} {...props} />;
 };
 
-export const CardBody = ({
-  style,
-  ...props
-}: HTMLAttributes<HTMLDivElement>) => (
-  <div style={{ padding: "28px", ...style }} {...props} />
-);
+export const CardBody = styled.div`
+  padding: 28px;
+
+  @media (max-width: 480px) {
+    padding: 18px;
+  }
+
+  @media (min-width: 1024px) {
+    padding: 36px;
+  }
+`;
 
 export const CardHeader = ({
   style,
