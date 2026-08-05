@@ -23,15 +23,13 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    proxy: {
-      "/api": {
-        target: "http://localhost:5000",
-        changeOrigin: true,
-      },
-    },
+    // No dev proxy: the client reaches the Worker directly over the WebSocket
+    // URL in REACT_APP_BACKEND_URL. The previous `/api` -> localhost:5000 proxy
+    // pointed at the Express server that was replaced by the Worker.
   },
   html: {
-    title: "ThrowMyFile",
+    // Title, description and social tags all live in public/index.html so they
+    // stay in one place. Setting html.title here would override the template's.
     template: path.resolve(__dirname, "./public/index.html"),
   },
   output: {
@@ -51,27 +49,25 @@ export default defineConfig({
   },
   tools: {
     bundlerChain: (chain) => {
-      // Make environment variables available in the client
       chain.plugin("define").tap((args) => {
         const env = process.env;
-        
-        // Add common environment variables
-        args[0]["process.env.PUBLIC_URL"] = JSON.stringify("");
-        args[0]["process.env.REACT_APP_BACKEND_URL"] = JSON.stringify(env.REACT_APP_BACKEND_URL || "");
-        args[0]["process.env.REACT_APP_FRONTEND_URL"] = JSON.stringify(env.REACT_APP_FRONTEND_URL || "");
-        
-        // Expose environment variables to the browser via window.ENV
+
+        // These are build-time substitutions, not runtime lookups: the bundler
+        // replaces the literal text `window.ENV` in the source with the object
+        // below. Changing them requires a rebuild, not a redeploy of config.
+        args[0]["process.env.REACT_APP_BACKEND_URL"] = JSON.stringify(
+          env.REACT_APP_BACKEND_URL || "",
+        );
+        args[0]["process.env.REACT_APP_FRONTEND_URL"] = JSON.stringify(
+          env.REACT_APP_FRONTEND_URL || "",
+        );
         args[0]["window.ENV"] = JSON.stringify({
           REACT_APP_BACKEND_URL: env.REACT_APP_BACKEND_URL || "",
           REACT_APP_FRONTEND_URL: env.REACT_APP_FRONTEND_URL || "",
         });
-        
+
         return args;
       });
     },
   },
-  dev: {
-    assetPrefix: "/",
-  },
-  envPrefix: ["REACT_APP_", "RSBUILD_"],
 });

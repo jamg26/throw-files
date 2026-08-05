@@ -12,6 +12,13 @@ yarn.lock
 .env.local
 .env.*.local
 
+# ...except the client's, which are committed on purpose. They hold no secrets,
+# only the public frontend/backend URLs, and the CI build reads them to bake the
+# WebSocket endpoint into the bundle. They were already tracked while matching
+# the rules above, which made the state look accidental.
+!client/.env.production
+!client/.env.development
+
 # Build Outputs
 build/
 dist/

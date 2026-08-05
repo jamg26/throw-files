@@ -14,24 +14,38 @@ interface ThemeContextValue {
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
-  theme: "light",
+  theme: "dark",
   toggleTheme: () => {},
 });
 
-export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [theme, setTheme] = useState<Theme>(() => {
-    const saved = localStorage.getItem("tmf-theme") as Theme | null;
-    if (saved === "dark" || saved === "light") return saved;
-    // Default to system preference
-    return window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
-  });
+function readInitialTheme(): Theme {
+  // The inline script in index.html has already resolved and applied the theme
+  // before first paint. Read its decision back so React's first render agrees
+  // with what is on screen.
+  const applied = document.documentElement.getAttribute("data-theme");
+  if (applied === "dark" || applied === "light") return applied;
 
-  // Apply theme immediately on mount and whenever theme changes
+  try {
+    const saved = localStorage.getItem("tmf-theme");
+    if (saved === "dark" || saved === "light") return saved;
+  } catch {
+    /* storage unavailable (private mode, blocked cookies) */
+  }
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+}
+
+export const ThemeProvider = ({ children }: { children: ReactNode }) => {
+  const [theme, setTheme] = useState<Theme>(readInitialTheme);
+
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("tmf-theme", theme);
+    try {
+      localStorage.setItem("tmf-theme", theme);
+    } catch {
+      /* storage unavailable — the theme still applies for this session */
+    }
   }, [theme]);
 
   const toggleTheme = () => setTheme((t) => (t === "light" ? "dark" : "light"));

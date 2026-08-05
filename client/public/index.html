@@ -2,49 +2,95 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Share your files wherever you are." />
 
+    <title>ThrowMyFile — Instant file transfer, nothing stored</title>
+    <meta
+      name="description"
+      content="Send files straight from one browser to another. Relayed in memory, never written to a server, no account needed."
+    />
+    <link rel="canonical" href="https://throwmyfile.com/" />
+
+    <link rel="icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#ED4B9E" />
-    <meta name="msapplication-TileColor" content="#ed4b9e" />
-    <meta name="theme-color" content="#ed4b9e" />
+    <link rel="manifest" href="/manifest.json" />
 
-    <!-- Primary Meta Tags -->
-    <title>ThrowMyFile</title>
-    <meta name="title" content="ThrowMyFile" />
-    <meta name="description" content="Share your files wherever you are." />
+    <meta name="msapplication-TileColor" content="#ed4b9e" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="ThrowMyFile" />
+    <!-- Matched to the actual page background per theme, so the browser chrome
+         stops rendering pink over a white or near-black page. -->
+    <meta
+      name="theme-color"
+      content="#ffffff"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content="#030014"
+      media="(prefers-color-scheme: dark)"
+    />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ThrowMyFile" />
     <meta property="og:url" content="https://throwmyfile.com/" />
-    <meta property="og:title" content="ThrowMyFile" />
+    <meta property="og:title" content="ThrowMyFile — Instant file transfer" />
     <meta
       property="og:description"
-      content="Share your files wherever you are."
+      content="Send files straight from one browser to another. Relayed in memory, never written to a server."
     />
     <meta property="og:image" content="https://throwmyfile.com/og_image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
 
     <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://throwmyfile.com/" />
-    <meta property="twitter:title" content="ThrowMyFile" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://throwmyfile.com/" />
+    <meta name="twitter:title" content="ThrowMyFile — Instant file transfer" />
     <meta
-      property="twitter:description"
-      content="Share your files wherever you are."
+      name="twitter:description"
+      content="Send files straight from one browser to another. Relayed in memory, never written to a server."
     />
     <meta
-      property="twitter:image"
+      name="twitter:image"
       content="https://throwmyfile.com/og_image.png"
     />
 
-    <link rel="manifest" href="/manifest.json" />
+    <script>
+      // Set the theme before first paint. ThemeProvider does this in an effect,
+      // which runs after the browser has already painted -- and since the
+      // stylesheet's :root block is the *dark* palette, light-mode visitors saw
+      // a dark flash on every load.
+      (function () {
+        try {
+          var saved = localStorage.getItem("tmf-theme");
+          var theme =
+            saved === "dark" || saved === "light"
+              ? saved
+              : window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light";
+          document.documentElement.setAttribute("data-theme", theme);
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      })();
+    </script>
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <noscript
+      style="
+        display: block;
+        padding: 24px;
+        font: 16px/1.5 system-ui, sans-serif;
+      "
+      >ThrowMyFile needs JavaScript to move files between browsers. Please enable
+      it and reload.</noscript
+    >
     <div id="root"></div>
   </body>
 </html>
