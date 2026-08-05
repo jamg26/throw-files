@@ -1,5 +1,18 @@
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: no-referrer
+  Cross-Origin-Opener-Policy: same-origin
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=(), usb=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://api.throwmyfile.com wss://api.throwmyfile.com; frame-ancestors 'none'; base-uri 'self'; form-action 'none'; object-src 'none'
+
 /manifest.json
   Content-Type: application/manifest+json
-/service-worker.js
-  Content-Type: application/javascript
+
+# Rsbuild fingerprints these filenames, so they can be cached indefinitely.
+/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/index.html
   Cache-Control: no-cache

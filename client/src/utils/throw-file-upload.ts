@@ -1,224 +1,283 @@
-// Drop-in replacement for the socketio-file-upload library.
-// Exposes the same addEventListener/removeEventListener/submitFiles API so
-// home/index.tsx requires only import changes, not logic changes.
+// Chunked file sender.
 //
-// File chunk binary protocol (same as worker/channel.ts):
+// Wire format (must match worker/channel.ts):
 //   [uint32 big-endian: header byte length][header JSON][chunk bytes]
 
 import type { ThrowSocket } from "./throw-socket";
+import { formatFileSize } from "./format";
+import {
+  MAX_FILE_BYTES,
+  MAX_FILENAME_LENGTH,
+  pickChunkSize,
+} from "./transfer";
 
-interface FileDescriptor {
+export const UploadError = {
+  TooLarge: "too-large",
+  Empty: "empty",
+  BadName: "bad-name",
+  Cancelled: "cancelled",
+  ReadFailed: "read-failed",
+  Disconnected: "disconnected",
+} as const;
+
+export type UploadErrorCode = (typeof UploadError)[keyof typeof UploadError];
+
+export interface UploadFileInfo {
   id: string;
   name: string;
   size: number;
   type: string;
-  meta: {
-    channel: string;
-    type: string;
-    size: number;
-    id: string;
-    compressed: boolean;
-  };
+  compressed: boolean;
 }
 
-// Files passed to submitFiles may carry a custom meta property (set in handleFiles
-// for zip bundles).
-type CustomFile = File & {
-  meta?: { compressed?: boolean; channel?: string };
-};
+export interface UploadErrorEvent {
+  id: string | null;
+  code: UploadErrorCode;
+  message: string;
+}
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyHandler = (event: any) => void;
+interface Events {
+  start: { file: UploadFileInfo };
+  progress: { id: string; bytesSent: number; size: number };
+  complete: { file: UploadFileInfo };
+  error: UploadErrorEvent;
+}
+
+type Listener<K extends keyof Events> = (payload: Events[K]) => void;
+
+/** Pause chunking once this much data is sitting in the socket buffer. */
+const MAX_BUFFERED_BYTES = 4 * 1024 * 1024;
+const DRAIN_POLL_MS = 50;
+
+export type SubmitFile = File & { compressed?: boolean };
 
 class ThrowFileUpload {
   socket: ThrowSocket;
-  maxFileSize = 0; // 0 = unlimited; set by component (e.g. 5 GB)
-  chunkSize = 1024 * 1024; // default 1 MB; overridden per-file by startHandler
 
-  private listeners: Map<string, AnyHandler[]> = new Map();
-  private abortControllers: Map<string, AbortController> = new Map();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private listeners: Map<string, ((payload: any) => void)[]> = new Map();
+  private aborted: Set<string> = new Set();
+  private active: Set<string> = new Set();
+
+  private readonly onDisconnected = () => this.abortAll();
 
   constructor(socket: ThrowSocket) {
     this.socket = socket;
+    // A dropped connection invalidates every in-flight byte offset.
+    this.socket.on("disconnected", this.onDisconnected);
   }
 
-  // The component wires up its own onChange/paste handlers, so this is a no-op.
-  listenOnInput(_input: HTMLElement | null): void {}
+  /**
+   * Detach from the socket. The socket is a module singleton that outlives this
+   * instance, so without this every remount would leave another "disconnected"
+   * listener behind.
+   */
+  dispose(): void {
+    this.abortAll();
+    this.socket.off("disconnected", this.onDisconnected);
+  }
 
-  addEventListener(type: string, handler: AnyHandler): void {
+  addEventListener<K extends keyof Events>(type: K, handler: Listener<K>): void {
     if (!this.listeners.has(type)) this.listeners.set(type, []);
     this.listeners.get(type)!.push(handler);
   }
 
-  removeEventListener(type: string, handler: AnyHandler): void {
+  removeEventListener<K extends keyof Events>(
+    type: K,
+    handler: Listener<K>,
+  ): void {
     const list = this.listeners.get(type);
-    if (list)
+    if (list) {
       this.listeners.set(
         type,
         list.filter((h) => h !== handler),
       );
+    }
+  }
+
+  get hasActiveUploads(): boolean {
+    return this.active.size > 0;
   }
 
   cancelUpload(fileId: string): void {
-    const controller = this.abortControllers.get(fileId);
-    if (controller) {
-      controller.abort();
-      this.abortControllers.delete(fileId);
+    if (this.active.has(fileId)) this.aborted.add(fileId);
+  }
+
+  abortAll(): void {
+    this.active.forEach((id) => this.aborted.add(id));
+  }
+
+  private dispatch<K extends keyof Events>(type: K, payload: Events[K]): void {
+    [...(this.listeners.get(type) ?? [])].forEach((h) => h(payload));
+  }
+
+  /**
+   * Upload files one after another.
+   *
+   * Sequential on purpose: concurrent uploads interleaved their chunk streams
+   * over a single socket and fought over the shared back-pressure gate.
+   */
+  async submitFiles(files: SubmitFile[], channel: string): Promise<void> {
+    for (const file of files) {
+      await this.uploadFile(file, channel);
     }
   }
 
-  private dispatch(type: string, payload: object): void {
-    (this.listeners.get(type) ?? []).forEach((h) => h(payload));
-  }
-
-  submitFiles(files: File[] | FileList): void {
-    Array.from(files as FileList).forEach((f) =>
-      this.uploadFile(f as CustomFile),
-    );
-  }
-
-  private async uploadFile(file: CustomFile): Promise<void> {
-    // File size check (code 1 matches the siofu error code the component handles)
-    if (this.maxFileSize > 0 && file.size > this.maxFileSize) {
-      this.dispatch("error", {
-        code: 1,
-        message: `File size exceeds limit of ${this.maxFileSize} bytes`,
+  private async uploadFile(file: SubmitFile, channel: string): Promise<void> {
+    if (file.size > MAX_FILE_BYTES) {
+      this.fail(null, UploadError.TooLarge, {
+        message: `${file.name} is ${formatFileSize(file.size)} — the limit is ${formatFileSize(MAX_FILE_BYTES)}.`,
+      });
+      return;
+    }
+    if (file.size === 0) {
+      this.fail(null, UploadError.Empty, {
+        message: `${file.name} is empty, so there is nothing to send.`,
+      });
+      return;
+    }
+    if (!file.name || file.name.length > MAX_FILENAME_LENGTH) {
+      this.fail(null, UploadError.BadName, {
+        message: `File names must be 1–${MAX_FILENAME_LENGTH} characters.`,
+      });
+      return;
+    }
+    if (!this.socket.connected) {
+      this.fail(null, UploadError.Disconnected, {
+        message: "Not connected — join a channel before sending.",
       });
       return;
     }
 
-    // Validate file is not empty
-    if (file.size === 0) {
-      this.dispatch("error", { code: 4, message: "File is empty" });
-      return;
-    }
-
-    // Validate file name
-    if (!file.name || file.name.length > 255) {
-      this.dispatch("error", { code: 5, message: "Invalid file name" });
-      return;
-    }
-
-    const id = Math.random().toString(36).slice(2) + Date.now().toString(36);
-
-    // Create abort controller for this upload
-    const abortController = new AbortController();
-    this.abortControllers.set(id, abortController);
-
-    const descriptor: FileDescriptor = {
+    const id = crypto.randomUUID();
+    const info: UploadFileInfo = {
       id,
       name: file.name,
       size: file.size,
-      type: file.type,
-      meta: {
-        channel: file.meta?.channel ?? "",
-        type: file.type,
-        size: file.size,
-        id,
-        compressed: file.meta?.compressed ?? false,
-      },
+      type: file.type || "application/octet-stream",
+      compressed: file.compressed ?? false,
     };
 
-    // Fire "start" — the handler in home/index.tsx mutates descriptor.meta.channel
-    // and sets this.chunkSize. Both are read AFTER dispatch() returns (synchronous).
-    this.dispatch("start", { file: descriptor });
+    this.active.add(id);
+    this.dispatch("start", { file: info });
 
-    // Notify server and channel peers that a file transfer is beginning.
     this.socket.emit("file-start", {
-      id: descriptor.id,
-      name: descriptor.name,
-      fileType: descriptor.type,
-      size: descriptor.size,
-      compressed: descriptor.meta.compressed,
+      id: info.id,
+      name: info.name,
+      fileType: info.type,
+      size: info.size,
+      compressed: info.compressed,
     });
 
-    // Stream chunks
-    let offset = 0;
+    const headerBytes = new TextEncoder().encode(
+      JSON.stringify({
+        type: "file-chunk",
+        id: info.id,
+        channel,
+        name: info.name,
+        fileType: info.type,
+        size: info.size,
+        compressed: info.compressed,
+      }),
+    );
+    const chunkSize = pickChunkSize(file.size);
+
     try {
+      let offset = 0;
       while (offset < file.size) {
-        if (abortController.signal.aborted) {
-          this.dispatch("error", { code: 2 }); // Upload cancelled
+        if (this.aborted.has(id)) return this.finishAborted(id, info);
+
+        let chunk: ArrayBuffer;
+        try {
+          chunk = await file.slice(offset, offset + chunkSize).arrayBuffer();
+        } catch {
+          this.fail(id, UploadError.ReadFailed, {
+            message: `Could not read ${info.name} from disk.`,
+          });
           return;
         }
-        const slice = file.slice(offset, offset + this.chunkSize);
-        const chunkBuffer = await this.readAsArrayBuffer(slice);
 
-        const headerJson = JSON.stringify({
-          type: "file-chunk",
-          id: descriptor.id,
-          channel: descriptor.meta.channel,
-          name: descriptor.name,
-          fileType: descriptor.type,
-          size: descriptor.size,
-          compressed: descriptor.meta.compressed,
-        });
-        const headerBytes = new TextEncoder().encode(headerJson);
+        // Back-pressure: let the socket drain so a slow link cannot make the
+        // sender balloon its own memory.
+        while (this.socket.bufferedAmount > MAX_BUFFERED_BYTES) {
+          if (this.aborted.has(id)) return this.finishAborted(id, info);
+          if (!this.socket.connected) {
+            this.fail(id, UploadError.Disconnected, {
+              message: `Connection lost while sending ${info.name}.`,
+            });
+            return;
+          }
+          await new Promise((resolve) => setTimeout(resolve, DRAIN_POLL_MS));
+        }
 
-        // [4 bytes header length][header bytes][chunk bytes]
-        const frame = new ArrayBuffer(
-          4 + headerBytes.byteLength + chunkBuffer.byteLength,
-        );
+        if (this.aborted.has(id)) return this.finishAborted(id, info);
+
+        const frame = new ArrayBuffer(4 + headerBytes.byteLength + chunk.byteLength);
         new DataView(frame).setUint32(0, headerBytes.byteLength, false);
         new Uint8Array(frame, 4, headerBytes.byteLength).set(headerBytes);
         new Uint8Array(frame, 4 + headerBytes.byteLength).set(
-          new Uint8Array(chunkBuffer),
+          new Uint8Array(chunk),
         );
 
-        // Back-pressure: wait for the WebSocket send buffer to drain before
-        // queuing the next chunk.  Prevents memory blow-up on slow / mobile
-        // connections where the sender can produce data faster than the network
-        // can consume it.
-        const MAX_BUFFERED = 4 * 1024 * 1024; // 4 MB
-        while (this.socket.bufferedAmount > MAX_BUFFERED) {
-          if (abortController.signal.aborted) {
-            this.dispatch("error", { code: 2 }); // Upload cancelled
-            return;
-          }
-          await new Promise((resolve) => setTimeout(resolve, 50));
+        if (!this.socket.sendBinary(frame)) {
+          this.fail(id, UploadError.Disconnected, {
+            message: `Connection lost while sending ${info.name}.`,
+          });
+          return;
         }
 
-        this.socket.sendBinary(frame);
-
-        offset += chunkBuffer.byteLength;
-
+        offset += chunk.byteLength;
         this.dispatch("progress", {
-          bytesLoaded: offset,
-          file: { id: descriptor.id, size: file.size },
+          id,
+          bytesSent: offset,
+          size: file.size,
         });
       }
 
-      // Signal end-of-file to server and all receivers.
       this.socket.emit("file-done", {
-        id: descriptor.id,
-        name: descriptor.name,
-        fileType: descriptor.type,
+        id: info.id,
+        name: info.name,
+        fileType: info.type,
+        size: info.size,
       });
-
-      this.dispatch("complete", { file: descriptor });
-      this.abortControllers.delete(id);
+      this.cleanup(id);
+      this.dispatch("complete", { file: info });
     } catch (error) {
-      this.abortControllers.delete(id);
-      this.dispatch("error", {
-        code: 3,
-        message: error instanceof Error ? error.message : "Unknown error",
+      this.fail(id, UploadError.ReadFailed, {
+        message:
+          error instanceof Error
+            ? error.message
+            : `Sending ${info.name} failed.`,
       });
-      throw error;
     }
   }
 
-  private readAsArrayBuffer(blob: Blob): Promise<ArrayBuffer> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) {
-          resolve(e.target.result as ArrayBuffer);
-        } else {
-          reject(new Error("FileReader returned empty result"));
-        }
-      };
-      reader.onerror = () => reject(new Error("Failed to read file chunk"));
-      reader.readAsArrayBuffer(blob);
+  private finishAborted(id: string, info: UploadFileInfo): void {
+    this.cleanup(id);
+    // Let the receiver drop its partial buffer instead of waiting for a timeout.
+    this.socket.emit("file-abort", { id: info.id, name: info.name });
+    this.dispatch("error", {
+      id,
+      code: UploadError.Cancelled,
+      message: `${info.name} was cancelled.`,
     });
+  }
+
+  private fail(
+    id: string | null,
+    code: UploadErrorCode,
+    { message }: { message: string },
+  ): void {
+    if (id) {
+      this.cleanup(id);
+      this.socket.emit("file-abort", { id });
+    }
+    this.dispatch("error", { id, code, message });
+  }
+
+  private cleanup(id: string): void {
+    this.active.delete(id);
+    this.aborted.delete(id);
   }
 }
 

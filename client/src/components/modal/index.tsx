@@ -22,31 +22,65 @@ export const Modal = ({
   const modalRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
 
+  // Held in a ref so the effect below can key on `visible` alone. Callers pass
+  // an inline arrow for onClose, so depending on it re-ran this effect on every
+  // parent render — releasing the body scroll lock and yanking focus back to
+  // the trigger button while the dialog was still open.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
+    if (!visible) return;
+
+    previousActiveElement.current = document.activeElement as HTMLElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const focusables = () =>
+      Array.from(
+        modalRef.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((el) => el.offsetParent !== null);
+
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    if (visible) {
-      // Store the previously focused element to restore focus later
-      previousActiveElement.current = document.activeElement as HTMLElement;
-      document.body.style.overflow = "hidden";
-      document.addEventListener("keydown", handleKey);
-
-      // Focus the modal when it opens
-      setTimeout(() => {
+      if (e.key === "Escape") {
+        onCloseRef.current();
+        return;
+      }
+      // Keep Tab inside the dialog. aria-modal alone does not constrain focus,
+      // so Tab used to walk straight out into the page behind the overlay.
+      if (e.key !== "Tab") return;
+      const items = focusables();
+      if (items.length === 0) {
+        e.preventDefault();
         modalRef.current?.focus();
-      }, 0);
-    }
-    return () => {
-      document.body.style.overflow = "";
-      document.removeEventListener("keydown", handleKey);
-
-      // Restore focus to the previously focused element when modal closes
-      if (previousActiveElement.current) {
-        previousActiveElement.current.focus();
+        return;
+      }
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || active === modalRef.current)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
       }
     };
-  }, [visible, onClose]);
+
+    document.addEventListener("keydown", handleKey);
+    const focusTimer = setTimeout(() => {
+      (focusables()[0] ?? modalRef.current)?.focus();
+    }, 0);
+
+    return () => {
+      clearTimeout(focusTimer);
+      document.removeEventListener("keydown", handleKey);
+      document.body.style.overflow = previousOverflow;
+      previousActiveElement.current?.focus();
+    };
+  }, [visible]);
 
   if (!visible) return null;
 
@@ -72,13 +106,7 @@ export const Modal = ({
             </CloseBtn>
           </Header>
         )}
-        <Body
-          $hasHeader={title !== undefined}
-          $hasFooter={!!footer}
-          role="document"
-        >
-          {children}
-        </Body>
+        <Body>{children}</Body>
         {footer && <Footer>{footer}</Footer>}
       </Box>
     </Overlay>,
@@ -124,6 +152,10 @@ const Box = styled.div`
     0 0 80px rgba(99, 102, 241, 0.05);
   overflow: hidden;
   animation: ${scaleIn} 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Keep a tall dialog inside the viewport and let the body scroll instead. */
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 40px);
 `;
 
 const Header = styled.div`
@@ -132,6 +164,7 @@ const Header = styled.div`
   justify-content: space-between;
   padding: 20px 24px;
   border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
 `;
 
 const Title = styled.div`
@@ -165,10 +198,12 @@ const CloseBtn = styled.button`
   }
 `;
 
-const Body = styled.div<{ $hasHeader: boolean; $hasFooter: boolean }>`
+const Body = styled.div`
   padding: 24px;
   color: var(--text-primary);
   font-family: "Inter", sans-serif;
+  overflow-y: auto;
+  flex: 1;
 `;
 
 const Footer = styled.div`
@@ -177,6 +212,7 @@ const Footer = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+  flex-shrink: 0;
 `;
 
 const X = ({ size }: { size: number }) => (

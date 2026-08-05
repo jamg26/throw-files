@@ -9,8 +9,41 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Gate both deploys on the checks passing, so a red build cannot ship.
+  verify:
+    name: Typecheck & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install worker dependencies
+        run: npm install
+
+      - name: Install frontend dependencies
+        working-directory: client
+        run: npm install --legacy-peer-deps
+
+      - name: Typecheck worker
+        run: npx tsc --noEmit
+
+      - name: Typecheck frontend
+        working-directory: client
+        run: npm run typecheck
+
+      - name: Run tests
+        working-directory: client
+        run: npm test
+
   deploy-frontend:
     name: Deploy Frontend (Pages)
+    needs: verify
     runs-on: ubuntu-latest
 
     steps:
@@ -38,6 +71,7 @@ jobs:
 
   deploy-backend:
     name: Deploy Backend (Durable Object + Worker)
+    needs: verify
     runs-on: ubuntu-latest
 
     steps:
@@ -52,6 +86,11 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      # NOTE: api.throwmyfile.com is attached to this Worker as a Custom Domain
+      # configured in the Cloudflare dashboard, not in wrangler.toml. If you ever
+      # need to recreate it, add it under Workers > throwmyfile > Domains &
+      # Routes. Do not point throwmyfile.com itself at the Worker -- that apex is
+      # served by Cloudflare Pages (see deploy-frontend above).
       - name: Deploy Worker to Cloudflare (api.throwmyfile.com)
         run: npx wrangler deploy
         env:

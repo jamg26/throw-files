@@ -1,54 +1,50 @@
-# ThrowMyFile Client (Rsbuild)
+# ThrowMyFile Client
 
-This is the frontend for ThrowMyFile, migrated from Create React App (CRA) with Craco to Rsbuild.
+React 18 frontend, built with [Rsbuild](https://rsbuild.dev/).
 
-## Available Scripts
+## Scripts
 
-In the project directory, you can run:
+| Command | What it does |
+|---|---|
+| `npm run dev` | Dev server on [localhost:3000](http://localhost:3000) |
+| `npm run build` | Production build → `build/` |
+| `npm run preview` | Serve the production build locally |
+| `npm test` | Vitest unit tests |
+| `npm run test:watch` | Vitest in watch mode |
+| `npm run typecheck` | `tsc --noEmit` |
 
-### `npm run dev`
+The Worker backend runs separately — `npm run dev:worker` from the repo root
+starts it on `:8787`, which is what `.env.development` points at.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Layout
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+```
+src/
+  components/   Shared UI primitives (Button, Input, Modal, Tooltip, Card, Text)
+  contexts/     Theme provider
+  pages/
+    home/       index.tsx (logic) + styles.ts (styled-components)
+    privacy-policy/
+    not-found/
+  utils/
+    channel.ts            Channel code rules            (tested)
+    transfer.ts           Size limits + integrity        (tested)
+    format.ts             Byte/filename formatting       (tested)
+    throw-socket.ts       WebSocket wrapper
+    throw-file-upload.ts  Chunked sender
+  App.less      Global styles and CSS custom properties
+```
 
-### `npm run build`
+## Environment variables
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+`REACT_APP_BACKEND_URL` and `REACT_APP_FRONTEND_URL` come from
+`.env.development` / `.env.production` and are substituted into the bundle at
+**build** time by the `define` plugin in `rsbuild.config.js`. They are not
+runtime lookups — changing one requires a rebuild.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Conventions
 
-### `npm run preview`
-
-Serves the production build locally for testing and preview.
-
-## Migration from CRA/Craco to Rsbuild
-
-This project has been migrated from Create React App (CRA) with Craco to Rsbuild. Key changes include:
-
-1. Replaced craco.config.js with rsbuild.config.js
-2. Updated package.json dependencies and scripts
-3. Modified proxy configuration
-4. Updated environment variable handling
-5. Ensured Less support works properly
-
-## Directory Structure
-
-- `public/` - Static assets that should be copied to the build directory
-- `src/` - Source code
-  - `components/` - Reusable React components
-  - `media/` - Images and other media assets
-  - `pages/` - React components that represent pages
-  - `reducers/` - Redux reducers
-  - `App.js` - Main app component
-  - `App.less` - Main styles
-  - `index.js` - Entry point
-
-## Learn More
-
-- [Rsbuild Documentation](https://rsbuild.dev/)
-- [React Documentation](https://reactjs.org/)
+- Text colours must clear WCAG AA (4.5:1). See the comments on `--text-muted`
+  and `--text-tertiary` in `App.less`.
+- Every animation is covered by the `prefers-reduced-motion` block in `App.less`.
+- No remote CSS, font, or script sources — the app makes no third-party requests.

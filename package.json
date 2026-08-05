@@ -1,10 +1,13 @@
 {
   "name": "throwmyfile",
   "version": "1.0.0",
-  "description": "ThrowMyFile - P2P file sharing via Cloudflare Workers + Durable Objects",
+  "description": "ThrowMyFile - relayed browser-to-browser file transfer on Cloudflare Workers + Durable Objects",
   "scripts": {
     "dev": "npm run dev --prefix client",
+    "dev:worker": "npx wrangler dev",
     "build": "npm install --prefix client --legacy-peer-deps && npm run build --prefix client",
+    "test": "npm run test --prefix client",
+    "typecheck": "tsc --noEmit && npm run typecheck --prefix client",
     "deploy": "npx wrangler deploy"
   },
   "author": "",
