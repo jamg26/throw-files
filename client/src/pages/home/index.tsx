@@ -63,7 +63,10 @@ const FRONTEND_URL: string =
   // hand somebody a localhost link in production.
   window.location.origin;
 
-const TRANSFER_TIMEOUT = 5 * 60 * 1000;
+// How long a receive may go without a single chunk before it is abandoned.
+// This must measure silence, not total duration: a fixed deadline from the
+// first chunk killed every transfer that took longer, i.e. every large file.
+const STALL_TIMEOUT = 2 * 60 * 1000;
 const TOAST_DURATION = 5000;
 const MAX_TOASTS = 4;
 const OBJECT_URL_TTL = 60_000;
@@ -408,6 +411,10 @@ export const Home = memo(() => {
 
   const fileRef = useRef<HTMLInputElement>(null);
   const buffersRef = useRef<Record<string, ReceiveBuffer>>({});
+  // Receives that were abandoned (timed out, cancelled, aborted, cut off).
+  // The sender may still be streaming them; without this, its next chunk
+  // would open a fresh buffer mid-file and the transfer row would reappear.
+  const discardedIdsRef = useRef<Set<string>>(new Set());
   const dragDepthRef = useRef(0);
 
   // Read by socket handlers that are registered once and must not go stale.
@@ -470,6 +477,7 @@ export const Home = memo(() => {
       const buffer = buffersRef.current[id];
       if (buffer) clearTimeout(buffer.timeoutId);
       delete buffersRef.current[id];
+      discardedIdsRef.current.add(id);
       dropTransfer(id);
     },
     [dropTransfer],
@@ -640,6 +648,20 @@ export const Home = memo(() => {
       addToast("Incoming", `Receiving ${data?.name ?? "a file"}…`, "info");
     };
 
+    // Re-armed on every chunk, so only a receive that stops progressing
+    // times out — never one that is simply large.
+    const armStallTimer = (id: string) =>
+      setTimeout(() => {
+        const stalled = buffersRef.current[id];
+        if (!stalled) return;
+        addToast(
+          "Transfer timed out",
+          `${stalled.info.name} stopped arriving. Nothing was saved.`,
+          "error",
+        );
+        discardBuffer(id);
+      }, STALL_TIMEOUT);
+
     const onChunk = (data: {
       id: string;
       name: string;
@@ -649,6 +671,7 @@ export const Home = memo(() => {
       file: ArrayBuffer;
     }) => {
       if (!data.file || data.file.byteLength === 0) return;
+      if (discardedIdsRef.current.has(data.id)) return;
       if (!(data.size > 0) || data.size > MAX_FILE_BYTES) {
         addToast(
           "Rejected",
@@ -669,16 +692,7 @@ export const Home = memo(() => {
             size: data.size,
             compressed: Boolean(data.compressed),
           },
-          timeoutId: setTimeout(() => {
-            const stalled = buffersRef.current[data.id];
-            if (!stalled) return;
-            addToast(
-              "Transfer timed out",
-              `${stalled.info.name} stopped arriving. Nothing was saved.`,
-              "error",
-            );
-            discardBuffer(data.id);
-          }, TRANSFER_TIMEOUT),
+          timeoutId: armStallTimer(data.id),
         };
         upsertTransfer({
           id: data.id,
@@ -704,6 +718,8 @@ export const Home = memo(() => {
 
       buffer.chunks.push(new Blob([data.file]));
       buffer.bytes += data.file.byteLength;
+      clearTimeout(buffer.timeoutId);
+      buffer.timeoutId = armStallTimer(data.id);
       setTransferBytes(data.id, buffer.bytes);
     };
 
